@@ -1,0 +1,713 @@
+{% if dmodels_list %}
+
+<head>
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+
+
+<script type="text/javascript">
+var utils = {
+	addListener: null,
+	removeListener: null,
+	newXHR: null,
+};
+
+//utils.addListener
+if (typeof document.addEventListener === 'function') { //W3C
+	utils.addListener = function (el, type, fn, _flag ) {
+		if (_flag === undefined) {
+			_flag = false;
+		};
+		el.addEventListener( type, fn, _flag );
+	};
+	utils.removeListener = function (el, type, fn, _flag ) {
+		if (_flag === undefined) {
+			_flag = false;
+		};
+		el.removeEventListener( type, fn, _flag );
+	};
+}else if (typeof document.attachEvent === 'function') { // IE
+	utils.addListener = function (el, type, fn ) {
+		el.attachEvent( 'on' + type, fn );
+	};
+	utils.removeListener = function (el, type, fn ) {
+		el.detachEvent( 'on' + type, fn );
+	};
+} else {
+	utils.addListener = function (el, type, fn ) {
+		el[ 'on' + type] = fn;
+	};
+	utils.removeListener = function (el, type, fn ) {
+		el[ 'on' + type] = null;
+	};
+};
+
+
+//utils.newXHR
+if (typeof XMLHttpRequest === 'function') { 
+	utils.newXHR = function () {
+		return new XMLHttpRequest();
+	};
+};
+var activeXids = [
+	'MSXML2.XMLHTTP.3.0',
+	'MSXML2.XMLHTTP',
+	'Microsoft.XMLHTTP'
+];
+for ( var i =0; i < activeXids.length && (!utils.newXHR) ; i++) { 
+	try {
+		var strObj = activeXids[i];
+		var t = new ActiveXObject(strObj);
+
+		utils.newXHR = function () { 
+			return new ActiveXObject(strObj); 
+		};
+	}catch(e){		
+	}
+};
+
+var getId = function(_id) {
+	return document.getElementById(_id);
+//	return document.querySelector( "#" + _id );
+}
+
+</script>
+
+
+<style type="text/css">
+#left_content {
+float: left;
+width: 20%;
+}
+
+#right_content {
+/*background: red; */
+float: right;
+width: 80%;
+}
+
+table {
+	border: 1px solid gray;
+//	border: 1px solid;
+//	border-collapse: collapse;
+//	border-spacing:1px;
+}
+
+th, td {
+	padding: 3px; 
+    border: 1px solid gray; 
+//   display: table-cell;
+}
+
+td.char, td.int, td.date {
+	width:250;
+}
+</style>
+
+</head>
+
+<body>
+<div id="left_content">
+    <ul>
+    {% for el in dmodels_list %}
+<!--        
+		<li><a href="/dmodels/ajax/{{ el.table_name }}/">{{ el.table_title }}</a></li> 
+        <li><a href="/{{ el.table_name }}/">{{ el.table_title }}</a></li>
+-->
+        <li><a href="{{ el.table_name }}/">{{ el.table_title }}</a></li>
+    {% endfor %}
+    </ul>
+</div>
+<div id="right_content">
+	<div>
+		
+	</div>	
+</div>
+<!--        
+<div id="right_content">
+	<table>
+	<tbody id="RighTable">
+		...
+	</table>	
+	<p>
+	<form>
+	<fieldset id="RightFieldSet">
+		...
+	</fieldset>
+	<input type='button' id='AddNewButton'>
+	</form>
+</div>	
+-->
+
+
+<script type="text/javascript">
+
+
+function ajax( _conf ) {
+
+//	var _model = _conf['model'];
+//	var _row_id = _conf['row_id'];
+	var _url = _conf['url'];
+	var _values = _conf['values'] || [];
+	var _fnFinish = _conf['fnFinish'];
+	var _fnError = _conf['fnError'];
+
+//	console.log('srv_SendChange in')
+	var xhr = utils.newXHR();		
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState !== 4) {
+			return false;
+		};
+		if (xhr.status !== 200) {
+			alert("Error (ajax), status code: " + xhr.status + ' ' + _url );
+			return false;
+		}
+
+		_fnFinish( xhr.responseText );
+	};			
+	xhr.onerror = function() {
+		_fnError();
+	};
+/*
+	console.log("_conf['values']");
+	console.log(_conf['values']);
+
+	console.log('_values');
+	console.log(_values);
+*/
+	var params = [];
+	for (var v=0, v_length=_values.length; v < v_length; v++ ) {
+		params.push( '' + _values[v]['field'] + '=' + _values[v]['value'] );
+	};
+
+	var strHref = window.location.href + _url + '/';
+	if ( 0 < params.length ) {
+		strHref = strHref + "?" + params.join('&') 
+	};
+
+//	console.log(strHref);
+
+	xhr.open( "GET", strHref, true );
+	xhr.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
+	xhr.send( null );
+};
+
+function isValid(_values) {
+
+	var messages = [];
+
+	var field, type, title, 
+		isError, strMessage;
+	for (var v=0, v_length=_values.length; v < v_length; v++ ) {
+		field = _values[v];
+
+		type = field['type'];
+		title = field['title'];
+
+		strVal = field['value'];
+		strVal = strVal.trim()
+
+		isError = false;
+		if (type == "char") {
+			if (strVal == "") {
+				isError = true;
+				strMessage = "(" + title + " ) is empty.";
+			};
+		}else if (type == "int") {
+			var intVal = parseInt( strVal, 10 ); 
+			if (isNaN(intVal)) {
+				isError = true;
+				strMessage = "(" + title + " ) is not number";
+			} else {
+				intVal = Math.max( -intVal, intVal );
+				norm_strVal = "" + intVal;
+				if (norm_strVal !== strVal) {
+					isError = true;
+					strMessage = "(" + title + " ) is not positive integer number"
+				}
+			}
+		};
+
+		if (isError) {
+			messages.push(strMessage);	
+		}
+	};
+
+	_values['messages'] = messages;
+
+	return (messages.length == 0 );
+};
+
+function editCell_Begin( _src_td ) {
+
+	if (GLOBAL_STATE.isError) {
+		return;
+	};
+
+	var strVal = _src_td.innerHTML;
+
+	var elIn = document.createElement("INPUT");
+	elIn.setAttribute("type", "text");
+	elIn.value = strVal;
+	elIn.className = _src_td.className;
+
+	var elTR = _src_td.parentNode;
+	elTR.replaceChild( elIn, _src_td );
+
+	elIn.focus();
+	elIn.select();
+
+
+	GLOBAL_STATE.isEditCell = true;
+	GLOBAL_STATE.current_td = _src_td;
+	GLOBAL_STATE.current_input = elIn;
+
+	utils.addListener( elIn, "blur", editCell_TrySaveFinish );
+////	if (_src_td.className != 'date') {
+//	if ( ! GLOBAL_STATE.isCellDatepicker) {
+//		utils.addListener( elIn, "blur", editCell_TrySaveFinish );
+//	};
+
+	utils.addListener( elIn, "keydown", function (_e) { 
+
+		if (_e.keyCode == 27) { // ESC
+			editCell_Cancel();
+		}else if(_e.keyCode == 13) { // Enter
+			editCell_TrySaveFinish();
+		};
+	} );
+};
+
+function editCell_TrySaveFinish( ) {
+
+	if (!GLOBAL_STATE.isEditCell) {
+		return;
+	};
+	if ( GLOBAL_STATE.isCellDatepicker) {
+		return;
+	};
+
+	var src_td = GLOBAL_STATE.current_td;
+	var elIn = GLOBAL_STATE.current_input;
+	var elTR = elIn.parentNode;
+
+	var nField = src_td.dataset['field'];
+	var field_def = GLOBAL_STATE['fields'][nField];
+
+	var field_name = field_def.id;
+	var field_title = field_def.title;
+	var field_type = src_td.className;
+	var field_value = elIn.value;
+	var row_id = elTR.firstChild.innerHTML;
+	var model = GLOBAL_STATE['model'];
+
+//		console.log('blur');
+	var values = [{ 
+		'field': field_name, 
+		'value': field_value,
+		'type': field_title,
+		'title': field_title, 
+	}];
+
+	if ( isValid(values) ) {
+		var conf = {
+//		 'model': model,
+//		 'row_id': row_id, 
+		 'url': 'ajax_change/' + model + '/' + row_id,
+//		 'values': [{'field': field_name, 'value': field_value }],
+		 'values': values,
+		};
+
+		conf['fnFinish'] = function () {
+			src_td.innerHTML = field_value;
+			elTR.replaceChild( src_td, elIn );
+			GLOBAL_STATE.isEditCell = false;
+		};
+		conf['fnError'] = function () {
+			GLOBAL_STATE.isError = true;
+		};
+
+		ajax( conf );
+
+	}else{
+		GLOBAL_STATE.isError = true;
+	};
+};
+
+function editCell_Cancel( _src) {
+
+	if (GLOBAL_STATE.isEditCell) {
+
+		var elTR = GLOBAL_STATE.current_input.parentNode;
+		elTR.replaceChild( GLOBAL_STATE.current_td, GLOBAL_STATE.current_input );
+
+		GLOBAL_STATE.isEditCell = false;
+		GLOBAL_STATE.isError = false;
+	};
+};
+
+function drawTable(_data) {
+
+	var elTable, elTBody;	
+	var elTR, elTD;
+
+	elTable = document.createElement('table');	
+
+//	elTable.className = 'content';
+//	elTable.width = '80%';
+//	elTable.cellSpacing  = '0';
+//	elTable.cellPadding = '3';
+//	elTable.border = '1';
+//	elTable.style.margin = 'auto';
+//	elTable.style = 'margin: auto; empty-cells:show;';
+	
+	elTBody = document.createElement('tbody');	
+	elTBody.id = "tbody_id";
+
+//	elTBody.dataset['model'] = _data.model;
+
+// header
+
+//	var fields = GLOBAL_STATE['fields'];
+	var fields = _data.fields;
+	var fields_length = fields.length;
+
+	elTR = document.createElement('tr');	
+	for (var f=0; f < fields_length; f++) {
+		elTD = document.createElement('th'); 
+		elTD.innerHTML = fields[f].title;
+		elTR.appendChild(elTD);	
+	};
+	elTBody.appendChild(elTR);	
+	
+	var rows = _data.data;
+	drawTableRows( elTBody, rows )
+
+	elTable.appendChild(elTBody);	
+
+	return elTable;	
+};
+
+function drawTableRows( elTBody, _rows ) {
+
+	var _fields = GLOBAL_STATE['fields']
+	var fields_length = _fields.length;
+
+	var elTR, elTD;
+
+	var row;
+	for (var r = 0, rows_length = _rows.length; r < rows_length; r++ ) {	
+		row = _rows[r];
+
+		elTR = document.createElement('tr');	
+		for (var f=0; f < fields_length; f++) {
+			elTD = document.createElement('td'); 
+			elTD.innerHTML = row[ f ];
+			elTD.dataset['field'] = f;
+
+			if (_fields[f].id != 'id') {
+				elTD.className = _fields[f].type;
+			};
+
+			elTR.appendChild(elTD);	
+		};
+	
+		elTBody.appendChild(elTR);	
+	};
+}
+
+function drawFormAddNew(_data) {
+
+//	console.log('drawAddNew 1');	
+
+	var elForm = document.createElement('form');
+	elForm.id = "AddNewForm"
+
+//	elForm.dataset['model'] = _data.model;
+
+	var fieldset = document.createElement('fieldset');
+	elForm.appendChild(fieldset);	
+
+	var legend = document.createElement('legend');
+	legend.innerHTML = 'Новая запись';
+	fieldset.appendChild(legend);	
+
+
+//	console.log('drawAddNew 2');	
+
+//	var fields = _data.structure.fields;
+//	var fields = GLOBAL_STATE['fields'];
+	var fields = _data.fields;
+	var elDiv, elIn, elBr;
+	for (var f=0, fields_length = fields.length; f < fields_length; f++) {
+
+//		console.log('drawAddNew circle 1');	
+		if (fields[f].id == 'id') {
+			continue;
+		};
+
+		elDivRow = document.createElement("div");
+
+		elText = document.createTextNode(fields[f]['title'] + ' ');
+
+		elIn = document.createElement("input");
+		elIn.setAttribute("type", "text");
+		elIn.name = fields[f]['id'];
+//		elIn.setAttribute("name", "fields[i].id");
+		elIn.className = fields[f]['type'];
+		elIn.dataset['title'] = fields[f]['title'];
+		elIn.dataset['type'] = fields[f]['type'];
+
+		elDivRow.appendChild(elText)
+		elDivRow.appendChild(elIn)
+
+//		elDiv = document.createElement("br");
+//		elBr = document.createElement("br");
+
+		fieldset.appendChild(elDivRow);	
+//		fieldset.appendChild(elIn);	
+//		fieldset.appendChild(elBr);	
+
+//		console.log('drawAddNew circle 2');	
+	};
+/*
+	elIn = document.createElement("input");
+	elIn.setAttribute("type", "hidden");
+	elIn.name = "model";
+	elIn.value = _data.model;
+	fieldset.appendChild(elIn);	
+*/
+//	console.log('drawAddNew end 0');	
+
+	elIn = document.createElement("input");
+	elIn.setAttribute("type", "button");
+	elIn.name = "AddButton";
+	elIn.value = "Добавить";
+	elIn.id = "AddNewButton";
+
+//	fieldset.appendChild(elForm);	
+	fieldset.appendChild(elIn);	
+
+//	console.log('drawAddNew end');	
+
+	return elForm;
+};
+
+function drawRight( root, _data) {
+
+//	var root = $("right_content");
+	var frag = document.createDocumentFragment();
+
+	var root_div = document.createElement('div');
+
+	var elTable = drawTable(_data);
+	var elFormNew = drawFormAddNew(_data);
+
+//	console.log('drawRight mid');	
+
+	root_div.appendChild(elTable);
+	root_div.appendChild( document.createElement('p') );
+	root_div.appendChild(elFormNew);
+
+	frag.appendChild(root_div)
+
+	root.replaceChild( frag, root.firstChild );
+};
+
+function fnHandler_LeftClick(_e) {
+
+//	console.log("fnHandler_LeftClick in");
+	var src, model_name;
+
+	var e = _e || window.event;
+	src = e.target || e.scrElement;
+
+	if (src.nodeName !== "A") {
+		return;
+	}
+
+	if (typeof e.preventDefault === "function") {
+		e.preventDefault();
+	};
+	e.returnValue = false;
+
+
+	var arHref = src.href.split( "/" );
+	var model = arHref[ arHref.length - 2 ] ;
+
+	var conf = {
+		'url': 'ajax_get_list/' + model,
+//		'model': model,	
+	};
+	conf['fnFinish'] = function  (_response) {
+		var jsonData = JSON.parse(_response);
+
+		GLOBAL_STATE['model'] = jsonData.model;
+		GLOBAL_STATE['fields'] = jsonData.fields
+		GLOBAL_STATE.isEditCell = false;		
+		GLOBAL_STATE.isError = false;		
+
+		drawRight( getId("right_content"), jsonData );
+		utils.addListener( getId("AddNewButton"), "click", fnHandler_AddNew );
+
+		// datepicker for form
+		var form = getId('AddNewForm');
+		var field;
+		for (var i=0, i_length = form.length; i < i_length; i++ ) {
+			field = form.elements[i];
+//			if (( field.nodeName == 'INPUT') && (field.className == 'date') ) {
+			if (( field.nodeName == 'INPUT') && (field.dataset['type'] == 'date') ) {
+				$(function() {
+					$( field ).datepicker();
+				});
+			};
+		};
+	};
+	conf['fnError'] = function (){
+		//
+	};
+
+	ajax( conf );
+};
+
+
+function fnHandler_RightClick(_e) {
+	
+	var src, model_name;
+
+	var e = _e || window.event;
+	src = e.target || e.scrElement;
+
+	if (src.nodeName == "TD" && src.className in {'int':0, 'char':0, 'date':0})  {
+
+	}else {
+		return;
+	}
+
+	if (typeof e.preventDefault === "function") {
+		e.preventDefault();
+	};
+	e.returnValue = false;
+
+
+//	// datepicker for cell
+//	if (src.className == 'date') {
+//		GLOBAL_STATE.isCellDatepicker = true;
+//	};
+
+	editCell_Begin( src );
+
+
+	// datepicker for cell
+	if (src.className == 'date') {
+		var prevDate = GLOBAL_STATE.current_input.value;
+		$(function() {
+//			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( {
+				onSelect: function(_date, _inst) {
+					GLOBAL_STATE.isCellDatepicker = false;
+					editCell_TrySaveFinish( );	
+        		},
+				onClose: function(_date, _inst) {
+					GLOBAL_STATE.isCellDatepicker = false;
+					if (_date == prevDate) {
+						editCell_Cancel( );
+					};
+        		},
+			});
+
+			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( "show" );
+		});
+	};
+};
+
+function fnHandler_AddNew(_e) {
+
+	// validate
+	var values = [];
+	var form = getId('AddNewForm');
+	var field;
+	for (var i=0, i_length = form.length; i < i_length; i++ ) {
+		field = form.elements[i];
+//		if (( field.nodeName == 'INPUT') && (field.className in {'int':0, 'char':0, 'date':0}) ) {
+		if (( field.nodeName == 'INPUT') && (field.dataset['type'] in {'int':0, 'char':0, 'date':0}) ) {
+			values.push( { 
+					'field': field.name,
+					'value': field.value, 
+					'type': field.className,
+					'title': field.dataset['title'],
+			});
+		};
+	};
+
+//	console.log(values);
+
+	if ( isValid( values ) ) {
+
+		var model = GLOBAL_STATE['model'];
+
+		var conf = {
+			'url': 'ajax_add/' + model, 
+//			'model':model, 
+			'values':values, 
+		}; 
+		conf['fnFinish'] = function (_response) {
+			var jsondata = JSON.parse(_response);
+
+			if (jsondata['model'] !== GLOBAL_STATE['model']) {
+				return;
+			};
+
+			form.reset();
+			drawTableRows( getId("tbody_id"), jsondata['data'] );
+		};
+		conf['fnError'] = function () {
+//			GLOBAL_STATE.isError = true;
+		};
+
+		ajax( conf );
+	}else{
+
+	};
+};
+
+function fnHandler_DocumentKeyDown(_e) {
+
+	if (_e.keyCode == 27) { // ESC
+		editCell_Cancel();
+	};
+};
+
+utils.addListener( getId("left_content"), "click", fnHandler_LeftClick );
+utils.addListener( getId("right_content"), "click", fnHandler_RightClick );
+utils.addListener( document, "keydown", fnHandler_DocumentKeyDown );
+
+
+var GLOBAL_STATE = { 
+	'model': "",
+	'fields': [],
+
+	'isEditCell': false,
+	'isCellDatepicker': false,
+	'current_td': null,
+	'current_input': null,
+	'isError': false,
+}; 
+
+
+
+var el = document.querySelector("#left_content ul li a");
+if (el) {
+//	console.log("begin");
+	el.click();
+};
+
+</script>
+<body>
+
+{% else %}
+    <p>No dmodels are available.</p>
+{% endif %}
