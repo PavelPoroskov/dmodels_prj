@@ -38,6 +38,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 # dmodels include (
     'dmodels',
+    'south',
 # dmodels include )
 )
 
