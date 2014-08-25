@@ -247,6 +247,7 @@ function editCell_Begin( _src_td ) {
 	};
 //	#2014.08.25
 	if (GLOBAL_STATE.isEditCell) {
+		GLOBAL_STATE.nextCell = _src_td;
 		return;
 	};
 
@@ -293,8 +294,14 @@ function editCell_TrySaveFinish( ) {
 		return;
 	};
 
+
 	var src_td = GLOBAL_STATE.current_td;
 	var elIn = GLOBAL_STATE.current_input;
+	if (elIn.value == src_td.innerHTML) {
+		editCell_Cancel();
+		return;
+	};
+
 	var elTR = elIn.parentNode;
 
 	var nField = src_td.dataset['field'];
@@ -328,6 +335,11 @@ function editCell_TrySaveFinish( ) {
 			src_td.innerHTML = field_value;
 			elTR.replaceChild( src_td, elIn );
 			GLOBAL_STATE.isEditCell = false;
+			if (GLOBAL_STATE.nextCell) {
+				var temp_td = GLOBAL_STATE.nextCell;
+				GLOBAL_STATE.nextCell = "";
+				editCell_Begin( temp_td );
+			};
 		};
 		conf['fnError'] = function () {
 			GLOBAL_STATE.isError = true;
@@ -340,7 +352,7 @@ function editCell_TrySaveFinish( ) {
 	};
 };
 
-function editCell_Cancel( _src) {
+function editCell_Cancel( ) {
 
 	if (GLOBAL_STATE.isEditCell) {
 
