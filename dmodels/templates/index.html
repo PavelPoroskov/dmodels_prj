@@ -245,6 +245,10 @@ function editCell_Begin( _src_td ) {
 	if (GLOBAL_STATE.isError) {
 		return;
 	};
+	#2014.08.25
+	if (GLOBAL_STATE.isEditCell) {
+		return;
+	};
 
 	var strVal = _src_td.innerHTML;
 
