@@ -191,7 +191,7 @@ function ajax( _conf ) {
 		strHref = strHref + "?" + params.join('&') 
 	};
 
-//	console.log(strHref);
+	console.log(strHref);
 
 	xhr.open( "GET", strHref, true );
 	xhr.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
@@ -199,6 +199,87 @@ function ajax( _conf ) {
 };
 
 function isValid(_values) {
+
+	function isValedNumber( _str, _min, _max, _strlen ) {
+
+		var res_isValedNumber = true,
+			intValue = parseInt(_str, 10 );
+
+
+		if (isNaN(intValue)) {
+			res_isValedNumber = false;
+		};
+
+		if (res_isValedNumber) {
+			pos_intVal = Math.max( -intValue, intValue ); //?
+			norm_strVal = "" + pos_intVal;
+
+			if (_strlen) {
+				for ( var i = 0, i_bound = _strlen - norm_strVal.length; i < i_bound; i++ ) {
+					norm_strVal = "0" + norm_strVal;
+				};
+			};
+			if (norm_strVal !== _str) {
+				res_isValedNumber = false;
+			}
+		}
+
+		if (res_isValedNumber && _strlen) { // len != 0
+			if ( _str.length != _strlen ) {
+				res_isValedNumber = false;
+			};
+		};
+
+		if (res_isValedNumber && (_min != undefined)) {
+			if ( ! (_min <= intValue ) ) {
+				res_isValedNumber = false;
+			}
+		};
+		if (res_isValedNumber && (_max != undefined) ) {
+			if ( ! ( intValue <= _max ) )  {
+				res_isValedNumber = false;
+			}
+		};
+
+		return res_isValedNumber;
+	};
+
+	function isValedDate( _strVal ) {
+		var res_isValedDate = true;
+
+		var aData = _strVal.split("/");
+
+		res_isValedDate = (aData.length == 3);
+
+		var _YYYY, _mm, _dd;
+		if (res_isValedDate) {
+			_mm = aData[0];
+			_dd = aData[1];
+			_YYYY = aData[2];
+
+			res_isValedDate = ( isValedNumber( _YYYY, 0, 9999, 4 ) 
+				&& isValedNumber( _mm, 1, 12, 2 ) 
+				&& isValedNumber( _dd, 1, 31, 2 ) );
+		};
+
+		if (res_isValedDate) {
+			var iY = parseInt(_YYYY),
+				im = parseInt(_mm) - 1,
+				id = parseInt(_dd);
+
+			var d = new Date( iY, im, id );
+
+//			var dY = d.getYear(),
+			var dY = d.getFullYear(),			
+				dm = d.getMonth(),
+				dd = d.getDate();
+
+			res_isValedDate = ( ( dY == iY) && (dm == im) && (dd == id) );
+		};
+
+		return res_isValedDate;
+	};
+
 
 	var messages = [];
 
@@ -220,6 +301,7 @@ function isValid(_values) {
 				strMessage = "(" + title + " ) is empty.";
 			};
 		}else if (type == "int") {
+/*			
 			var intVal = parseInt( strVal, 10 ); 
 			if (isNaN(intVal)) {
 				isError = true;
@@ -231,7 +313,19 @@ function isValid(_values) {
 					isError = true;
 					strMessage = "(" + title + " ) is not positive integer number"
 				}
-			}
+			};
+*/			
+			if ( ! isValedNumber( strVal, 1 ) ) {
+				isError = true;
+				strMessage = "(" + title + " ) is not positive integer number"
+			};
+		}else if (type == "date") {
+			console.log( "test date " + strVal );
+			if ( ! isValedDate( strVal ) ) {
+				isError = true;
+				strMessage = "(" + title + " ) is not valid date"
+				console.log( strMessage );
+			};
 		};
 
 		if (isError) {
@@ -273,11 +367,13 @@ function editCell_Begin( _src_td ) {
 	GLOBAL_STATE.current_td = _src_td;
 	GLOBAL_STATE.current_input = elIn;
 
-	utils.addListener( elIn, "blur", editCell_TrySaveFinish );
-////	if (_src_td.className != 'date') {
-//	if ( ! GLOBAL_STATE.isCellDatepicker) {
-//		utils.addListener( elIn, "blur", editCell_TrySaveFinish );
-//	};
+//	utils.addListener( elIn, "blur", editCell_TrySaveFinish );
+	utils.addListener( elIn, "blur", function () {
+		if ( ! GLOBAL_STATE.isCellDatepicker) {
+			console.log( 'editCell_Begin blur' );
+			editCell_TrySaveFinish();
+		};
+	} );
 
 	utils.addListener( elIn, "keydown", function (_e) { 
 
@@ -287,16 +383,49 @@ function editCell_Begin( _src_td ) {
 			editCell_TrySaveFinish();
 		};
 	} );
+
+
+	// datepicker for cell
+	if (_src_td.className == 'date') {
+		var prevDate = GLOBAL_STATE.current_input.value;
+		$(function() {
+//			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( {
+				onSelect: function(_date, _inst) {
+					console.log( 'Datepicker + onSelect' );
+					GLOBAL_STATE.isCellDatepicker = false;
+					editCell_TrySaveFinish( );	
+        		},
+				onClose: function(_date, _inst) {
+					console.log( 'Datepicker + onClose' );
+//					GLOBAL_STATE.isCellDatepicker = false;
+//					if (_date == prevDate) {
+//						editCell_Cancel( );
+//					};
+
+					if (GLOBAL_STATE.isCellDatepicker) {
+						editCell_Cancel( );
+					};
+					GLOBAL_STATE.isCellDatepicker = false;
+        		},
+			});
+
+			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( "show" );
+		});
+	};
+
 };
 
 function editCell_TrySaveFinish( ) {
+	console.log( "editCell_TrySaveFinish in " );
 
 	if (!GLOBAL_STATE.isEditCell) {
 		return;
 	};
-	if ( GLOBAL_STATE.isCellDatepicker) {
-		return;
-	};
+//	if ( GLOBAL_STATE.isCellDatepicker) {
+//		return;
+//	};
 
 
 	var src_td = GLOBAL_STATE.current_td;
@@ -322,11 +451,14 @@ function editCell_TrySaveFinish( ) {
 	var values = [{ 
 		'field': field_name, 
 		'value': field_value,
-		'type': field_title,
+//		'type': field_title,
+		'type': field_type,
 		'title': field_title, 
 	}];
 
 	if ( isValid(values) ) {
+		console.log('editCell_TrySaveFinish isValid ');
+
 		var conf = {
 //		 'model': model,
 //		 'row_id': row_id, 
@@ -618,30 +750,6 @@ function fnHandler_RightClick(_e) {
 //	};
 
 	editCell_Begin( src );
-
-
-	// datepicker for cell
-	if (src.className == 'date') {
-		var prevDate = GLOBAL_STATE.current_input.value;
-		$(function() {
-//			GLOBAL_STATE.isCellDatepicker = true;
-			$( GLOBAL_STATE.current_input ).datepicker( {
-				onSelect: function(_date, _inst) {
-					GLOBAL_STATE.isCellDatepicker = false;
-					editCell_TrySaveFinish( );	
-        		},
-				onClose: function(_date, _inst) {
-					GLOBAL_STATE.isCellDatepicker = false;
-					if (_date == prevDate) {
-						editCell_Cancel( );
-					};
-        		},
-			});
-
-			GLOBAL_STATE.isCellDatepicker = true;
-			$( GLOBAL_STATE.current_input ).datepicker( "show" );
-		});
-	};
 };
 
 function fnHandler_AddNew(_e) {
@@ -657,7 +765,8 @@ function fnHandler_AddNew(_e) {
 			values.push( { 
 					'field': field.name,
 					'value': field.value, 
-					'type': field.className,
+//					'type': field.className,
+					'type': field.dataset['type'],
 					'title': field.dataset['title'],
 			});
 		};

@@ -299,7 +299,7 @@ class ViewTest_ajax_add(TestCase):
 			one_model_test( model_name )
 
 
-	def test_add_responce(self):
+	def test_add_response(self):
 		def one_model_test( model_name ):
 
 			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
