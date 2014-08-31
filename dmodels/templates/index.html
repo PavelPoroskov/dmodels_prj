@@ -1,41 +1,113 @@
 {% if dmodels_list %}
 
 <head>
-
+<!--
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+-->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css" />
 <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
 
-<style type="text/css">
 
+<script type="text/javascript">
+var utils = {
+	addListener: null,
+	removeListener: null,
+	newXHR: null,
+};
+
+//utils.addListener
+if (typeof document.addEventListener === 'function') { //W3C
+	utils.addListener = function (el, type, fn, _flag ) {
+		if (_flag === undefined) {
+			_flag = false;
+		};
+		el.addEventListener( type, fn, _flag );
+	};
+	utils.removeListener = function (el, type, fn, _flag ) {
+		if (_flag === undefined) {
+			_flag = false;
+		};
+		el.removeEventListener( type, fn, _flag );
+	};
+}else if (typeof document.attachEvent === 'function') { // IE
+	utils.addListener = function (el, type, fn ) {
+		el.attachEvent( 'on' + type, fn );
+	};
+	utils.removeListener = function (el, type, fn ) {
+		el.detachEvent( 'on' + type, fn );
+	};
+} else {
+	utils.addListener = function (el, type, fn ) {
+		el[ 'on' + type] = fn;
+	};
+	utils.removeListener = function (el, type, fn ) {
+		el[ 'on' + type] = null;
+	};
+};
+
+
+//utils.newXHR
+if (typeof XMLHttpRequest === 'function') { 
+	utils.newXHR = function () {
+		return new XMLHttpRequest();
+	};
+};
+var activeXids = [
+	'MSXML2.XMLHTTP.3.0',
+	'MSXML2.XMLHTTP',
+	'Microsoft.XMLHTTP'
+];
+for ( var i =0; i < activeXids.length && (!utils.newXHR) ; i++) { 
+	try {
+		var strObj = activeXids[i];
+		var t = new ActiveXObject(strObj);
+
+		utils.newXHR = function () { 
+			return new ActiveXObject(strObj); 
+		};
+	}catch(e){		
+	}
+};
+
+var getId = function(_id) {
+	return document.getElementById(_id);
+//	return document.querySelector( "#" + _id );
+}
+
+</script>
+
+
+<style type="text/css">
 #left_content {
-	float: left;
-	width: 20%;
+float: left;
+width: 20%;
 }
 
 #right_content {
-	float: right;
-	width: 80%;
+/*background: red; */
+float: right;
+width: 80%;
 }
 
 table {
 	border: 1px solid gray;
+//	border: 1px solid;
+//	border-collapse: collapse;
+//	border-spacing:1px;
 }
 
 th, td {
 	padding: 3px; 
     border: 1px solid gray; 
+//   display: table-cell;
 }
 
 td.char, td.int, td.date {
 	width:250;
 }
-
-.error_field {
-	margin: 2px;
-	border: 2px solid red;
-}
-
 </style>
 
 </head>
@@ -44,6 +116,10 @@ td.char, td.int, td.date {
 <div id="left_content">
     <ul>
     {% for el in dmodels_list %}
+<!--        
+		<li><a href="/dmodels/ajax/{{ el.table_name }}/">{{ el.table_title }}</a></li> 
+        <li><a href="/{{ el.table_name }}/">{{ el.table_title }}</a></li>
+-->
         <li><a href="{{ el.table_name }}/">{{ el.table_title }}</a></li>
     {% endfor %}
     </ul>
@@ -73,7 +149,56 @@ td.char, td.int, td.date {
 <script type="text/javascript">
 
 
-function isValidValues(_values) {
+function ajax( _conf ) {
+
+//	var _model = _conf['model'];
+//	var _row_id = _conf['row_id'];
+	var _url = _conf['url'];
+	var _values = _conf['values'] || [];
+	var _fnFinish = _conf['fnFinish'];
+	var _fnError = _conf['fnError'];
+
+//	console.log('srv_SendChange in')
+	var xhr = utils.newXHR();		
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState !== 4) {
+			return false;
+		};
+		if (xhr.status !== 200) {
+			alert("Error (ajax), status code: " + xhr.status + ' ' + _url );
+			return false;
+		}
+
+		_fnFinish( xhr.responseText );
+	};			
+	xhr.onerror = function() {
+		_fnError();
+	};
+/*
+	console.log("_conf['values']");
+	console.log(_conf['values']);
+
+	console.log('_values');
+	console.log(_values);
+*/
+	var params = [];
+	for (var v=0, v_length=_values.length; v < v_length; v++ ) {
+		params.push( '' + _values[v]['field'] + '=' + _values[v]['value'] );
+	};
+
+	var strHref = window.location.href + _url + '/';
+	if ( 0 < params.length ) {
+		strHref = strHref + "?" + params.join('&') 
+	};
+
+	console.log(strHref);
+
+	xhr.open( "GET", strHref, true );
+	xhr.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
+	xhr.send( null );
+};
+
+function isValid(_values) {
 
 	function isValedNumber( _str, _min, _max, _strlen ) {
 
@@ -170,26 +295,38 @@ function isValidValues(_values) {
 		strVal = strVal.trim()
 
 		isError = false;
-		strMessage = "";
 		if (type == "char") {
 			if (strVal == "") {
 				isError = true;
 				strMessage = "(" + title + " ) is empty.";
 			};
 		}else if (type == "int") {
+/*			
+			var intVal = parseInt( strVal, 10 ); 
+			if (isNaN(intVal)) {
+				isError = true;
+				strMessage = "(" + title + " ) is not number";
+			} else {
+				intVal = Math.max( -intVal, intVal );
+				norm_strVal = "" + intVal;
+				if (norm_strVal !== strVal) {
+					isError = true;
+					strMessage = "(" + title + " ) is not positive integer number"
+				}
+			};
+*/			
 			if ( ! isValedNumber( strVal, 1 ) ) {
 				isError = true;
 				strMessage = "(" + title + " ) is not positive integer number"
 			};
 		}else if (type == "date") {
+			console.log( "test date " + strVal );
 			if ( ! isValedDate( strVal ) ) {
 				isError = true;
 				strMessage = "(" + title + " ) is not valid date"
+				console.log( strMessage );
 			};
 		};
-
-		field['isError'] = isError;
-		field['ErrorMessage'] = strMessage;
 
 		if (isError) {
 			messages.push(strMessage);	
@@ -201,22 +338,167 @@ function isValidValues(_values) {
 	return (messages.length == 0 );
 };
 
-function isValidAndMarkError( _values ) {
+function editCell_Begin( _src_td ) {
 
-	var res = isValidValues( _values );
-
-	var field;
-	for (var v=0, v_length=_values.length; v < v_length; v++ ) {
-		field = _values[v];
-//		if (field['isError']){
-//			$(field['el']).addClass('error_field');			
-//		};
-		$(field['el']).toggleClass('error_field', field['isError'] );
+	if (GLOBAL_STATE.isError) {
+		return;
+	};
+//	#2014.08.25
+	if (GLOBAL_STATE.isEditCell) {
+		GLOBAL_STATE.nextCell = _src_td;
+		return;
 	};
 
-	return res;
+	var strVal = _src_td.innerHTML;
+
+	var elIn = document.createElement("INPUT");
+	elIn.setAttribute("type", "text");
+	elIn.value = strVal;
+	elIn.className = _src_td.className;
+
+	var elTR = _src_td.parentNode;
+	elTR.replaceChild( elIn, _src_td );
+
+	elIn.focus();
+	elIn.select();
+
+
+	GLOBAL_STATE.isEditCell = true;
+	GLOBAL_STATE.current_td = _src_td;
+	GLOBAL_STATE.current_input = elIn;
+
+//	utils.addListener( elIn, "blur", editCell_TrySaveFinish );
+	utils.addListener( elIn, "blur", function () {
+		if ( ! GLOBAL_STATE.isCellDatepicker) {
+			console.log( 'editCell_Begin blur' );
+			editCell_TrySaveFinish();
+		};
+	} );
+
+	utils.addListener( elIn, "keydown", function (_e) { 
+
+		if (_e.keyCode == 27) { // ESC
+			editCell_Cancel();
+		}else if(_e.keyCode == 13) { // Enter
+			editCell_TrySaveFinish();
+		};
+	} );
+
+
+	// datepicker for cell
+	if (_src_td.className == 'date') {
+		var prevDate = GLOBAL_STATE.current_input.value;
+		$(function() {
+//			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( {
+				onSelect: function(_date, _inst) {
+					console.log( 'Datepicker + onSelect' );
+					GLOBAL_STATE.isCellDatepicker = false;
+					editCell_TrySaveFinish( );	
+        		},
+				onClose: function(_date, _inst) {
+					console.log( 'Datepicker + onClose' );
+//					GLOBAL_STATE.isCellDatepicker = false;
+//					if (_date == prevDate) {
+//						editCell_Cancel( );
+//					};
+
+					if (GLOBAL_STATE.isCellDatepicker) {
+						editCell_Cancel( );
+					};
+					GLOBAL_STATE.isCellDatepicker = false;
+        		},
+			});
+
+			GLOBAL_STATE.isCellDatepicker = true;
+			$( GLOBAL_STATE.current_input ).datepicker( "show" );
+		});
+	};
+
 };
 
+function editCell_TrySaveFinish( ) {
+	console.log( "editCell_TrySaveFinish in " );
+
+	if (!GLOBAL_STATE.isEditCell) {
+		return;
+	};
+//	if ( GLOBAL_STATE.isCellDatepicker) {
+//		return;
+//	};
+
+
+	var src_td = GLOBAL_STATE.current_td;
+	var elIn = GLOBAL_STATE.current_input;
+	if (elIn.value == src_td.innerHTML) {
+		editCell_Cancel();
+		return;
+	};
+
+	var elTR = elIn.parentNode;
+
+	var nField = src_td.dataset['field'];
+	var field_def = GLOBAL_STATE['fields'][nField];
+
+	var field_name = field_def.id;
+	var field_title = field_def.title;
+	var field_type = src_td.className;
+	var field_value = elIn.value;
+	var row_id = elTR.firstChild.innerHTML;
+	var model = GLOBAL_STATE['model'];
+
+//		console.log('blur');
+	var values = [{ 
+		'field': field_name, 
+		'value': field_value,
+//		'type': field_title,
+		'type': field_type,
+		'title': field_title, 
+	}];
+
+	if ( isValid(values) ) {
+		console.log('editCell_TrySaveFinish isValid ');
+
+		var conf = {
+//		 'model': model,
+//		 'row_id': row_id, 
+		 'url': 'ajax_change/' + model + '/' + row_id,
+//		 'values': [{'field': field_name, 'value': field_value }],
+		 'values': values,
+		};
+
+		conf['fnFinish'] = function () {
+			src_td.innerHTML = field_value;
+			elTR.replaceChild( src_td, elIn );
+			GLOBAL_STATE.isEditCell = false;
+			if (GLOBAL_STATE.nextCell) {
+				var temp_td = GLOBAL_STATE.nextCell;
+				GLOBAL_STATE.nextCell = "";
+				editCell_Begin( temp_td );
+			};
+		};
+		conf['fnError'] = function () {
+			GLOBAL_STATE.isError = true;
+		};
+
+		ajax( conf );
+
+	}else{
+		GLOBAL_STATE.isError = true;
+	};
+};
+
+function editCell_Cancel( ) {
+
+	if (GLOBAL_STATE.isEditCell) {
+
+		var elTR = GLOBAL_STATE.current_input.parentNode;
+		elTR.replaceChild( GLOBAL_STATE.current_td, GLOBAL_STATE.current_input );
+
+		GLOBAL_STATE.isEditCell = false;
+		GLOBAL_STATE.isError = false;
+	};
+};
 
 function drawTable(_data) {
 
@@ -225,11 +507,22 @@ function drawTable(_data) {
 
 	elTable = document.createElement('table');	
 
+//	elTable.className = 'content';
+//	elTable.width = '80%';
+//	elTable.cellSpacing  = '0';
+//	elTable.cellPadding = '3';
+//	elTable.border = '1';
+//	elTable.style.margin = 'auto';
+//	elTable.style = 'margin: auto; empty-cells:show;';
+	
 	elTBody = document.createElement('tbody');	
 	elTBody.id = "tbody_id";
 
+//	elTBody.dataset['model'] = _data.model;
 
 // header
+
+//	var fields = GLOBAL_STATE['fields'];
 	var fields = _data.fields;
 	var fields_length = fields.length;
 
@@ -241,7 +534,8 @@ function drawTable(_data) {
 	};
 	elTBody.appendChild(elTR);	
 	
-	drawTableRows( elTBody, _data.data )
+	var rows = _data.data;
+	drawTableRows( elTBody, rows )
 
 	elTable.appendChild(elTBody);	
 
@@ -275,149 +569,6 @@ function drawTableRows( elTBody, _rows ) {
 		elTBody.appendChild(elTR);	
 	};
 }
-
-function editCell_Begin( _src_td ) {
-
-	if (GLOBAL_STATE.isError) {
-		return;
-	};
-//	#2014.08.25
-	if (GLOBAL_STATE.isEditCell) {
-		GLOBAL_STATE.nextCell = _src_td;
-		return;
-	};
-
-	var strVal = _src_td.innerHTML;
-
-	var elIn = document.createElement("INPUT");
-	elIn.setAttribute("type", "text");
-	elIn.value = strVal;
-	elIn.className = _src_td.className;
-
-	var elTR = _src_td.parentNode;
-	elTR.replaceChild( elIn, _src_td );
-
-	elIn.focus();
-	elIn.select();
-
-
-	GLOBAL_STATE.isEditCell = true;
-	GLOBAL_STATE.current_td = _src_td;
-	GLOBAL_STATE.current_input = elIn;
-
-
-	// datepicker for cell
-	if (_src_td.className == 'date') {
-		var prevDate = GLOBAL_STATE.current_input.value;
-		$(function() {
-			$( GLOBAL_STATE.current_input ).datepicker( {
-				onSelect: function(_date, _inst) {
-
-					GLOBAL_STATE.isCellDatepicker = false;
-					editCell_TrySaveFinish( );	
-        		},
-				onClose: function(_date, _inst) {
-
-					if (GLOBAL_STATE.isCellDatepicker) {
-						editCell_Cancel( );
-					};
-					GLOBAL_STATE.isCellDatepicker = false;
-        		},
-			});
-
-			GLOBAL_STATE.isCellDatepicker = true;
-			$( GLOBAL_STATE.current_input ).datepicker( "show" );
-		});
-	};
-
-};
-
-function editCell_TrySaveFinish( ) {
-//	console.log( "editCell_TrySaveFinish in " );
-
-	if (!GLOBAL_STATE.isEditCell) {
-		return;
-	};
-	if ( GLOBAL_STATE.isCellDatepicker) {
-		return;
-	};
-
-
-	var src_td = GLOBAL_STATE.current_td;
-	var elIn = GLOBAL_STATE.current_input;
-	if (elIn.value == src_td.innerHTML) {
-		editCell_Cancel();
-		return;
-	};
-
-	var elTR = elIn.parentNode;
-
-	var nField = src_td.dataset['field'];
-	var field_def = GLOBAL_STATE['fields'][nField];
-
-	var field_name = field_def.id;
-	var field_title = field_def.title;
-	var field_type = src_td.className;
-	var field_value = elIn.value;
-	var row_id = elTR.firstChild.innerHTML;
-//	var model = GLOBAL_STATE['model'];
-
-//		console.log('blur');
-	var values = [{ 
-		'field': field_name, 
-		'value': field_value,
-//		'type': field_title,
-		'type': field_type,
-		'title': field_title, 
-		'el': elIn
-	}];
-
-//	if ( isValidValues(values) ) {
-	if ( isValidAndMarkError(values) ) {
-
-		var data = {};
-		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			data[ values[v]['field'] ] = values[v]['value'];
-		};
-
-		$.ajax({
-			url: 'ajax_change/' + GLOBAL_STATE['model'] + '/' + row_id + '/', 
-			data: data,
-//			dataType : "json",
-			success: function  (_jsondata) {
-//				console.log('editCell_TrySaveFinish success ');
-				src_td.innerHTML = field_value;
-				elTR.replaceChild( src_td, elIn );
-				GLOBAL_STATE.isEditCell = false;
-				GLOBAL_STATE.isError = false; // 2014.08.31
-				if (GLOBAL_STATE.nextCell) {
-					var temp_td = GLOBAL_STATE.nextCell;
-					GLOBAL_STATE.nextCell = "";
-					editCell_Begin( temp_td );
-				};
-			},
-			error: function( xhr, status, errorThrown ) {
-//				console.log('editCell_TrySaveFinish error ');
-				GLOBAL_STATE.isError = true;
-			},
-		});
-	}else{
-//		console.log('editCell_TrySaveFinish isValidAndMarkError error ');
-		GLOBAL_STATE.isError = true;
-	};
-};
-
-function editCell_Cancel( ) {
-
-	if (GLOBAL_STATE.isEditCell) {
-
-		var elTR = GLOBAL_STATE.current_input.parentNode;
-		elTR.replaceChild( GLOBAL_STATE.current_td, GLOBAL_STATE.current_input );
-
-		GLOBAL_STATE.isEditCell = false;
-		GLOBAL_STATE.isError = false;
-	};
-};
 
 function drawFormAddNew(_data) {
 
@@ -475,29 +626,28 @@ function drawFormAddNew(_data) {
 	};
 /*
 	elIn = document.createElement("input");
+	elIn.setAttribute("type", "hidden");
+	elIn.name = "model";
+	elIn.value = _data.model;
+	fieldset.appendChild(elIn);	
+*/
+//	console.log('drawAddNew end 0');	
+
+	elIn = document.createElement("input");
 	elIn.setAttribute("type", "button");
 	elIn.name = "AddButton";
 	elIn.value = "Добавить";
 	elIn.id = "AddNewButton";
-*/
-	elIn = document.createElement("input");
-	elIn.setAttribute("type", "reset");
-	elIn.name = "ResetButton";
-	elIn.value = "Отмена";
-	elIn.id = "NewRowReset";
+
+//	fieldset.appendChild(elForm);	
 	fieldset.appendChild(elIn);	
 
-	elIn = document.createElement("input");
-	elIn.setAttribute("type", "submit");
-	elIn.name = "AddButton";
-	elIn.value = "Добавить";
-	elIn.id = "AddNewButton";
-	fieldset.appendChild(elIn);	
+//	console.log('drawAddNew end');	
 
 	return elForm;
 };
 
-function draw_RightContent( root, _data) {
+function drawRight( root, _data) {
 
 //	var root = $("right_content");
 	var frag = document.createDocumentFragment();
@@ -518,44 +668,95 @@ function draw_RightContent( root, _data) {
 	root.replaceChild( frag, root.firstChild );
 };
 
-function load_RightContent(_model) {
+function fnHandler_LeftClick(_e) {
 
-	$.ajax({
-		url: 'ajax_get_list/' + _model,
-		dataType : "json",
-		success: function  (_json) {
+//	console.log("fnHandler_LeftClick in");
+	var src, model_name;
 
-			GLOBAL_STATE['model'] = _json.model;
-			GLOBAL_STATE['fields'] = _json.fields
-			GLOBAL_STATE.isEditCell = false;		
-			GLOBAL_STATE.isError = false;		
+	var e = _e || window.event;
+	src = e.target || e.scrElement;
 
-			draw_RightContent( $("#right_content")[0], _json );
+	if (src.nodeName !== "A") {
+		return;
+	}
 
-			// datepicker for form
-			var form = $('#AddNewForm')[0];
-			var field;
-			for (var i=0, i_length = form.length; i < i_length; i++ ) {
-				field = form.elements[i];
-				if (( field.nodeName == 'INPUT') && (field.dataset['type'] == 'date') ) {
-					$(function() {
-						$( field ).datepicker();
-					});
-				};
+	if (typeof e.preventDefault === "function") {
+		e.preventDefault();
+	};
+	e.returnValue = false;
+
+
+	var arHref = src.href.split( "/" );
+	var model = arHref[ arHref.length - 2 ] ;
+
+	var conf = {
+		'url': 'ajax_get_list/' + model,
+//		'model': model,	
+	};
+	conf['fnFinish'] = function  (_response) {
+		var jsonData = JSON.parse(_response);
+
+		GLOBAL_STATE['model'] = jsonData.model;
+		GLOBAL_STATE['fields'] = jsonData.fields
+		GLOBAL_STATE.isEditCell = false;		
+		GLOBAL_STATE.isError = false;		
+
+		drawRight( getId("right_content"), jsonData );
+		utils.addListener( getId("AddNewButton"), "click", fnHandler_AddNew );
+
+		// datepicker for form
+		var form = getId('AddNewForm');
+		var field;
+		for (var i=0, i_length = form.length; i < i_length; i++ ) {
+			field = form.elements[i];
+//			if (( field.nodeName == 'INPUT') && (field.className == 'date') ) {
+			if (( field.nodeName == 'INPUT') && (field.dataset['type'] == 'date') ) {
+				$(function() {
+					$( field ).datepicker();
+				});
 			};
-		},
-		error: function( xhr, status, errorThrown ) {
+		};
+	};
+	conf['fnError'] = function (){
+		//
+	};
 
-		},
-	});
+	ajax( conf );
 };
 
 
-function add_NewRow() {
+function fnHandler_RightClick(_e) {
+	
+	var src, model_name;
+
+	var e = _e || window.event;
+	src = e.target || e.scrElement;
+
+	if (src.nodeName == "TD" && src.className in {'int':0, 'char':0, 'date':0})  {
+
+	}else {
+		return;
+	}
+
+	if (typeof e.preventDefault === "function") {
+		e.preventDefault();
+	};
+	e.returnValue = false;
+
+
+//	// datepicker for cell
+//	if (src.className == 'date') {
+//		GLOBAL_STATE.isCellDatepicker = true;
+//	};
+
+	editCell_Begin( src );
+};
+
+function fnHandler_AddNew(_e) {
 
 	// validate
 	var values = [];
-	var form = $('#AddNewForm')[0];
+	var form = getId('AddNewForm');
 	var field;
 	for (var i=0, i_length = form.length; i < i_length; i++ ) {
 		field = form.elements[i];
@@ -567,104 +768,51 @@ function add_NewRow() {
 //					'type': field.className,
 					'type': field.dataset['type'],
 					'title': field.dataset['title'],
-//					'el': field.parentNode,
-					'el': field,
 			});
 		};
 	};
 
-//	if ( isValid( values ) ) {
-	if ( isValidAndMarkError( values ) ) {
+//	console.log(values);
 
-		var data = {};
-		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			data[ values[v]['field'] ] = values[v]['value'];
+	if ( isValid( values ) ) {
+
+		var model = GLOBAL_STATE['model'];
+
+		var conf = {
+			'url': 'ajax_add/' + model, 
+//			'model':model, 
+			'values':values, 
+		}; 
+		conf['fnFinish'] = function (_response) {
+			var jsondata = JSON.parse(_response);
+
+			if (jsondata['model'] !== GLOBAL_STATE['model']) {
+				return;
+			};
+
+			form.reset();
+			drawTableRows( getId("tbody_id"), jsondata['data'] );
+		};
+		conf['fnError'] = function () {
+//			GLOBAL_STATE.isError = true;
 		};
 
-		$.ajax({
-			url: 'ajax_add/' + GLOBAL_STATE['model'] + '/', 
-			data: data,
-			dataType : "json",
-			success: function  (_jsondata) {
-
-				if (_jsondata['model'] !== GLOBAL_STATE['model']) {
-					return;
-				};
-				form.reset();
-				drawTableRows( $("#tbody_id")[0], _jsondata['data'] );
-			},
-			error: function( xhr, status, errorThrown ) {
-//				console.log('add_NewRow error');
-//				GLOBAL_STATE.isError = true;
-			},
-		});
-
+		ajax( conf );
 	}else{
 
 	};
 };
 
-
-$( "#left_content" ).on( "click", "a", function( _event ) {
-
-	_event.preventDefault();
-	var el_a = _event.target || _event.scrElement;
-
-	var arHref = el_a.href.split( "/" );
-	var model = arHref[ arHref.length - 2 ] ;
-
-	load_RightContent( model );
-});
-
-$( "#right_content" ).on( "click", "td.int, td.char, td.date", function( _event ) {
-
-	_event.preventDefault();
-	var el_td = _event.target || _event.scrElement;
-
-//	console.log('right click');
-//	console.log(el_td);
-	editCell_Begin( el_td );
-});
-$( "#right_content" ).on( "blur", "tr input.int, tr input.char, tr input.date", function( _event ) {
-
-	_event.preventDefault();
-
-//	if ( ! GLOBAL_STATE.isCellDatepicker) {
-//		editCell_TrySaveFinish();
-//	};
-	editCell_TrySaveFinish();
-});
-$( "#right_content" ).on( "keydown", "tr input.int, tr input.char, tr input.date", function( _event ) {
-
-	if (_event.keyCode == 27) { // ESC
-		editCell_Cancel();
-	}else if(_event.keyCode == 13) { // Enter
-		editCell_TrySaveFinish();
-	};
-});
-$( document ).on( "keydown", function( _e ) {
+function fnHandler_DocumentKeyDown(_e) {
 
 	if (_e.keyCode == 27) { // ESC
 		editCell_Cancel();
 	};
-} );
+};
 
-
-//$( "#right_content" ).on( "click", "input#AddNewButton", function( _event ) {
-//	console.log( "AddNewButton click" );
-$( "#right_content" ).on( "submit", "#AddNewForm", function( _event ) {
-//	console.log( "AddNewButton submit" );
-	_event.preventDefault();
-
-	add_NewRow();
-});
-$( "#right_content" ).on( "reset", "#AddNewForm", function( _event ) {
-//	console.log( "AddNewForm reset" );
-
-	$('#AddNewForm input').removeClass('error_field');
-//	$('#AddNewForm div').removeClass('error_field');
-});
-
+utils.addListener( getId("left_content"), "click", fnHandler_LeftClick );
+utils.addListener( getId("right_content"), "click", fnHandler_RightClick );
+utils.addListener( document, "keydown", fnHandler_DocumentKeyDown );
 
 
 var GLOBAL_STATE = { 
@@ -672,15 +820,19 @@ var GLOBAL_STATE = {
 	'fields': [],
 
 	'isEditCell': false,
-	'isError': false,
 	'isCellDatepicker': false,
 	'current_td': null,
 	'current_input': null,
-	'nextCell': null,
+	'isError': false,
 }; 
 
 
-$("#left_content ul li:first a").trigger("click");
+
+var el = document.querySelector("#left_content ul li a");
+if (el) {
+//	console.log("begin");
+	el.click();
+};
 
 </script>
 <body>
