@@ -383,6 +383,7 @@ function editCell_TrySaveFinish( ) {
 		$.ajax({
 			url: 'ajax_change/' + GLOBAL_STATE['model'] + '/' + row_id + '/', 
 			data: data,
+			type: 'POST', // 2014.09.03
 //			dataType : "json",
 			success: function  (_jsondata) {
 //				console.log('editCell_TrySaveFinish success ');
@@ -584,6 +585,7 @@ function add_NewRow() {
 		$.ajax({
 			url: 'ajax_add/' + GLOBAL_STATE['model'] + '/', 
 			data: data,
+			type: 'POST', // 2014.09.03
 			dataType : "json",
 			success: function  (_jsondata) {
 
@@ -679,6 +681,36 @@ var GLOBAL_STATE = {
 	'nextCell': null,
 }; 
 
+
+
+function getCookie( _name ) {
+	var res = null;
+
+	dictCookie = {};
+	if (document.cookie && document.cookie != '') {
+		var ar_kv = document.cookie.split(";");
+		var kv;
+		for (var k=0, k_length=ar_kv.length; k < k_length; k++) {
+			kv = ar_kv[k].split('=');
+			dictCookie[ kv[0] ] = kv[1];
+		}
+	};
+
+	res = dictCookie[_name];
+
+	return res;
+};
+
+var csrftoken = getCookie( 'csrftoken' );
+//console.log( 'csrftoken ' + csrftoken );
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if ((settings.type == 'POST') && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
 
 $("#left_content ul li:first a").trigger("click");
 

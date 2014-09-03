@@ -266,15 +266,18 @@ class ViewTest_ajax_add(TestCase):
 					new_value = test_value.strftime( '%m/%d/%Y' )
 				dictValuesFormat[field_name] = new_value
 
-			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
 
+#			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
+#
+#			strHref = reverse('ajax_add', args=(model_name,) )
+#			strHref = strHref + '?' + '&'.join(listParams)
+#
+#	#		print(strHref)
+#			response = self.client.get( strHref )
 
+#			strHref = 'ajax_add/' + model_name 
 			strHref = reverse('ajax_add', args=(model_name,) )
-			strHref = strHref + '?' + '&'.join(listParams)
-
-	#		print(strHref)
-			response = self.client.get( strHref )
-	#		self.assertEqual( response.status_code, 200 )
+			response = self.client.post( strHref, dictValuesFormat )
 
 
 			Model = dictModelClasses[ model_name ]
@@ -316,14 +319,19 @@ class ViewTest_ajax_add(TestCase):
 					new_value = test_value.strftime( '%m/%d/%Y' )
 				dictValuesFormat[field_name] = new_value
 
-			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
+#			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
+#
+#
+#			strHref = reverse('ajax_add', args=(model_name,) )
+#			strHref = strHref + '?' + '&'.join(listParams)
+#
+#	#		print(strHref)
+#			response = self.client.get( strHref )
 
-
+#			strHref = 'ajax_add/' + model_name 
 			strHref = reverse('ajax_add', args=(model_name,) )
-			strHref = strHref + '?' + '&'.join(listParams)
+			response = self.client.post( strHref, dictValuesFormat )
 
-	#		print(strHref)
-			response = self.client.get( strHref )
 			self.assertEqual( response.status_code, 200 )
 
 
@@ -392,12 +400,15 @@ class ViewTest_ajax_change(TestCase):
 					new_value = value.strftime( '%m/%d/%Y' )
 				dictValuesFormat[field_name] = new_value
 
-			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
+#			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
 
+
+#			strHref = reverse('ajax_change', args=(model_name, _row_id) )
+#			strHref = strHref + '?' + '&'.join(listParams)
+#			response = self.client.get( strHref )
 
 			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-			strHref = strHref + '?' + '&'.join(listParams)
-			response = self.client.get( strHref )
+			response = self.client.post( strHref, dictValuesFormat )
 
 
 			#result
@@ -454,9 +465,13 @@ class ViewTest_ajax_change(TestCase):
 			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
 
 
+#			strHref = reverse('ajax_change', args=(model_name, _row_id) )
+#			strHref = strHref + '?' + '&'.join(listParams)
+#			response = self.client.get( strHref )
+
 			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-			strHref = strHref + '?' + '&'.join(listParams)
-			response = self.client.get( strHref )
+			response = self.client.post( strHref, dictValuesFormat )
+
 
 			self.assertEqual( response.status_code, 200 )
 

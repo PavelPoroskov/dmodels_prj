@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.views.decorators.http import require_GET, require_POST
 
 from dmodels.models import dictModelStructure
 from dmodels.models import dictModelClasses
@@ -81,6 +82,7 @@ def ajax_get_list(request, model_name):
 	return HttpResponse(res_str)
 
 # ?? security
+#@require_POST
 def ajax_change( request, model_name, row_id ):
 
 #	model_name = request.GET['model']
@@ -93,7 +95,8 @@ def ajax_change( request, model_name, row_id ):
 
 	obj = dictModelClasses[model_name].objects.get( **{'id': row_id} )
 
-	for (field, value) in request.GET.items():
+#	for (field, value) in request.GET.items(): # 2014.09.03
+	for (field, value) in request.POST.items():
 		if dictFilds[field]['type'] == 'date':
 			value = datetime.strptime( value, '%m/%d/%Y')
 		setattr( obj, field, value )
@@ -102,13 +105,14 @@ def ajax_change( request, model_name, row_id ):
 
 	return HttpResponse("Ok")
 
-
+#@require_POST
 def ajax_add( request, model_name ):
 
 	dictFilds = dictModelStructure[model_name]['dictFilds'] 
 
 	dictValues = {};
-	for (field, value) in request.GET.items():
+#	for (field, value) in request.GET.items(): # 2014.09.03
+	for (field, value) in request.POST.items(): 
 		if dictFilds[field]['type'] == 'date':
 			value = datetime.strptime( value, '%m/%d/%Y')
 		dictValues[field] = value;
