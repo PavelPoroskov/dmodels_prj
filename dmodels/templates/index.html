@@ -689,9 +689,11 @@ function getCookie( _name ) {
 	dictCookie = {};
 	if (document.cookie && document.cookie != '') {
 		var ar_kv = document.cookie.split(";");
-		var kv;
+		var str_kv, kv;
 		for (var k=0, k_length=ar_kv.length; k < k_length; k++) {
-			kv = ar_kv[k].split('=');
+			str_kv = ar_kv[k]
+			str_kv = str_kv.trim();
+			kv = str_kv.split('=');
 			dictCookie[ kv[0] ] = kv[1];
 		}
 	};
