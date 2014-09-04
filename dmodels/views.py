@@ -1,18 +1,22 @@
+from datetime import datetime
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
+
+import json
 
 from dmodels.models import dictModelStructure
 from dmodels.models import dictModelClasses
 
-from datetime import datetime
-import json
 
 
 list_Models = [{ 'table_name': key, 'table_title': val['table_title'] } for (key,val) in dictModelStructure.items() ];
 list_Models = sorted( list_Models, key=lambda obj: obj['table_title'] );
 
 
+@ensure_csrf_cookie
 def index(request):
     context = { 'dmodels_list': list_Models }
     return render( request, 'index.html', context )
@@ -82,7 +86,8 @@ def ajax_get_list(request, model_name):
 	return HttpResponse(res_str)
 
 # ?? security
-#@require_POST
+@require_POST
+@csrf_protect
 def ajax_change( request, model_name, row_id ):
 
 #	model_name = request.GET['model']
@@ -105,7 +110,8 @@ def ajax_change( request, model_name, row_id ):
 
 	return HttpResponse("Ok")
 
-#@require_POST
+@require_POST
+@csrf_protect
 def ajax_add( request, model_name ):
 
 	dictFilds = dictModelStructure[model_name]['dictFilds'] 
