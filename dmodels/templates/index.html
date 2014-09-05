@@ -236,7 +236,9 @@ function drawTable(_data) {
 	elTR = document.createElement('tr');	
 	for (var f=0; f < fields_length; f++) {
 		elTD = document.createElement('th'); 
-		elTD.innerHTML = fields[f].title;
+//		elTD.innerHTML = fields[f].title;
+		elTD.textContent = fields[f].title;
+		
 		elTR.appendChild(elTD);	
 	};
 	elTBody.appendChild(elTR);	
@@ -262,7 +264,10 @@ function drawTableRows( elTBody, _rows ) {
 		elTR = document.createElement('tr');	
 		for (var f=0; f < fields_length; f++) {
 			elTD = document.createElement('td'); 
-			elTD.innerHTML = row[ f ];
+
+//			elTD.innerHTML = row[ f ];
+			elTD.textContent = row[ f ];
+
 			elTD.dataset['field'] = f;
 
 			if (_fields[f].id != 'id') {
@@ -287,7 +292,8 @@ function editCell_Begin( _src_td ) {
 		return;
 	};
 
-	var strVal = _src_td.innerHTML;
+//	var strVal = _src_td.innerHTML;
+	var strVal = _src_td.textContent;
 
 	var elIn = document.createElement("INPUT");
 	elIn.setAttribute("type", "text");
@@ -333,7 +339,7 @@ function editCell_Begin( _src_td ) {
 };
 
 function editCell_TrySaveFinish( ) {
-//	console.log( "editCell_TrySaveFinish in " );
+	console.log( "editCell_TrySaveFinish in " );
 
 	if (!GLOBAL_STATE.isEditCell) {
 		return;
@@ -345,7 +351,8 @@ function editCell_TrySaveFinish( ) {
 
 	var src_td = GLOBAL_STATE.current_td;
 	var elIn = GLOBAL_STATE.current_input;
-	if (elIn.value == src_td.innerHTML) {
+//	if (elIn.value == src_td.innerHTML) {
+	if (elIn.value == src_td.textContent) {
 		editCell_Cancel();
 		return;
 	};
@@ -359,7 +366,10 @@ function editCell_TrySaveFinish( ) {
 	var field_title = field_def.title;
 	var field_type = src_td.className;
 	var field_value = elIn.value;
-	var row_id = elTR.firstChild.innerHTML;
+
+//	var row_id = elTR.firstChild.innerHTML;
+	var row_id = elTR.firstChild.textContent;
+
 //	var model = GLOBAL_STATE['model'];
 
 //		console.log('blur');
@@ -386,8 +396,10 @@ function editCell_TrySaveFinish( ) {
 			type: 'POST', // 2014.09.03
 //			dataType : "json",
 			success: function  (_jsondata) {
-//				console.log('editCell_TrySaveFinish success ');
-				src_td.innerHTML = field_value;
+				console.log('editCell_TrySaveFinish success ');
+
+//				src_td.innerHTML = field_value; // 2014.09.05
+				src_td.textContent = field_value;
 				elTR.replaceChild( src_td, elIn );
 				GLOBAL_STATE.isEditCell = false;
 				GLOBAL_STATE.isError = false; // 2014.08.31
@@ -433,7 +445,9 @@ function drawFormAddNew(_data) {
 	elForm.appendChild(fieldset);	
 
 	var legend = document.createElement('legend');
-	legend.innerHTML = 'Новая запись';
+//	legend.innerHTML = 'Новая запись';
+	legend.textContent = 'Новая запись';
+	
 	fieldset.appendChild(legend);	
 
 

@@ -148,3 +148,7 @@ def ajax_add( request, model_name ):
 		})
 
 	return HttpResponse(res_str)
+
+
+# add, change with POST
+# innerHTML --+ textContent
