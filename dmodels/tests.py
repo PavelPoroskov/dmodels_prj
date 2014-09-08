@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta
+import json
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
 from dmodels.models import dictModelClasses
 from dmodels.models import dictModelStructure
 
-from datetime import datetime, timedelta
-import json
 
 
 # select most complex model: nTypes, nFields
@@ -14,7 +15,7 @@ import json
 #	model_name = model_name0
 #	break
 
-
+"""
 listModels = []
 for (model_name, model_def) in dictModelStructure.items():
 
@@ -38,13 +39,14 @@ try:
 except:
 	pass
 
-
+"""
 def create_dictTestRowValues(_model_name): 
 	dictTypeTestValues = {
 		'int': 117,
 		'char': "test string",
 #		'date': datetime.today()
-		'date': datetime.today().date()
+#		'date': datetime.today().date()
+		'date': "09/01/2014"
 	}
 
 	listFields = dictModelStructure[ _model_name ]['fields'] 
@@ -62,7 +64,8 @@ def create_dictTestRowValuesNew(_model_name):
 		'int': 203,
 		'char': "test string new",
 #		'date': datetime.today()
-		'date': datetime.today().date() + timedelta(10)
+#		'date': datetime.today().date() + timedelta(10)
+		'date': "09/11/2014"
 	}
 
 	listFields = dictModelStructure[ _model_name ]['fields'] 
@@ -233,8 +236,8 @@ class ViewTest_ajax_get_list(TestCase):
 				field_def = dictFields[field_name]
 				obj_value = row[ field_def['i_field'] ]
 
-				if (field_def['type'] == 'date'):
-					obj_value = datetime.strptime( obj_value, '%m/%d/%Y' ).date()
+#				if (field_def['type'] == 'date'):
+#					obj_value = datetime.strptime( obj_value, '%m/%d/%Y' ).date()
 
 				if obj_value != test_value:
 					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
@@ -257,14 +260,14 @@ class ViewTest_ajax_add(TestCase):
 
 			dictValues = create_dictTestRowValues( model_name )
 
-			dictValuesFormat = {}
-			for (field_name, test_value) in dictValues.items():
-				field_def = dictFields[field_name]
+#			dictValuesFormat = {}
+#			for (field_name, test_value) in dictValues.items():
+#				field_def = dictFields[field_name]
 
-				new_value = test_value
-				if field_def['type'] == 'date':
-					new_value = test_value.strftime( '%m/%d/%Y' )
-				dictValuesFormat[field_name] = new_value
+#				new_value = test_value
+#				if field_def['type'] == 'date':
+#					new_value = test_value.strftime( '%m/%d/%Y' )
+#				dictValuesFormat[field_name] = new_value
 
 
 #			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
@@ -277,7 +280,8 @@ class ViewTest_ajax_add(TestCase):
 
 #			strHref = 'ajax_add/' + model_name 
 			strHref = reverse('ajax_add', args=(model_name,) )
-			response = self.client.post( strHref, dictValuesFormat )
+#			response = self.client.post( strHref, dictValuesFormat )
+			response = self.client.post( strHref, dictValues )
 
 
 			Model = dictModelClasses[ model_name ]
@@ -310,14 +314,14 @@ class ViewTest_ajax_add(TestCase):
 
 			dictValues = create_dictTestRowValues( model_name )
 
-			dictValuesFormat = {}
-			for (field_name, test_value) in dictValues.items():
-				field_def = dictFields[field_name]
-
-				new_value = test_value
-				if field_def['type'] == 'date':
-					new_value = test_value.strftime( '%m/%d/%Y' )
-				dictValuesFormat[field_name] = new_value
+#			dictValuesFormat = {}
+#			for (field_name, test_value) in dictValues.items():
+#				field_def = dictFields[field_name]
+#
+#				new_value = test_value
+#				if field_def['type'] == 'date':
+#					new_value = test_value.strftime( '%m/%d/%Y' )
+#				dictValuesFormat[field_name] = new_value
 
 #			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
 #
@@ -330,7 +334,8 @@ class ViewTest_ajax_add(TestCase):
 
 #			strHref = 'ajax_add/' + model_name 
 			strHref = reverse('ajax_add', args=(model_name,) )
-			response = self.client.post( strHref, dictValuesFormat )
+#			response = self.client.post( strHref, dictValuesFormat )
+			response = self.client.post( strHref, dictValues )
 
 			self.assertEqual( response.status_code, 200 )
 
@@ -353,8 +358,8 @@ class ViewTest_ajax_add(TestCase):
 
 				obj_value = row[ field_def['i_field'] ]
 
-				if (field_def['type'] == 'date'):
-					test_value = datetime.strftime( test_value, '%m/%d/%Y' )
+#				if (field_def['type'] == 'date'):
+#					test_value = datetime.strftime( test_value, '%m/%d/%Y' )
 				if (field_def['type'] == 'int'):
 					test_value = str(test_value)
 
@@ -377,7 +382,7 @@ class ViewTest_ajax_change(TestCase):
 			# before: create row, _row_id
 	#		dictValues = create_dictTestRowValues( model_name );
 			Model = dictModelClasses[ model_name ]
-			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
+#			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
 
 
 			dictValues = create_dictTestRowValues( model_name )
@@ -393,12 +398,12 @@ class ViewTest_ajax_change(TestCase):
 
 			#action
 			dictNewValues = create_dictTestRowValuesNew( model_name );
-			dictValuesFormat = {}
-			for (field_name, value ) in dictNewValues.items():
-				new_value = value
-				if dictFields[field_name]['type'] == 'date':
-					new_value = value.strftime( '%m/%d/%Y' )
-				dictValuesFormat[field_name] = new_value
+#			dictValuesFormat = {}
+#			for (field_name, value ) in dictNewValues.items():
+#				new_value = value
+#				if dictFields[field_name]['type'] == 'date':
+#					new_value = value.strftime( '%m/%d/%Y' )
+#				dictValuesFormat[field_name] = new_value
 
 #			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
 
@@ -408,7 +413,8 @@ class ViewTest_ajax_change(TestCase):
 #			response = self.client.get( strHref )
 
 			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-			response = self.client.post( strHref, dictValuesFormat )
+#			response = self.client.post( strHref, dictValuesFormat )
+			response = self.client.post( strHref, dictNewValues )
 
 
 			#result
@@ -439,7 +445,7 @@ class ViewTest_ajax_change(TestCase):
 
 			# before: create row, _row_id
 			Model = dictModelClasses[ model_name ]
-			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
+#			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
 
 
 			dictValues = create_dictTestRowValues( model_name )
@@ -455,14 +461,14 @@ class ViewTest_ajax_change(TestCase):
 
 			#action
 			dictNewValues = create_dictTestRowValuesNew( model_name );
-			dictValuesFormat = {}
-			for (field_name, value ) in dictNewValues.items():
-				new_value = value
-				if dictFields[field_name]['type'] == 'date':
-					new_value = value.strftime( '%m/%d/%Y' )
-				dictValuesFormat[field_name] = new_value
+#			dictValuesFormat = {}
+#			for (field_name, value ) in dictNewValues.items():
+#				new_value = value
+#				if dictFields[field_name]['type'] == 'date':
+#					new_value = value.strftime( '%m/%d/%Y' )
+#				dictValuesFormat[field_name] = new_value
 
-			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
+#			listParams = [''+field_name+'='+str(value) for (field_name, value) in  dictValuesFormat.items()]
 
 
 #			strHref = reverse('ajax_change', args=(model_name, _row_id) )
@@ -470,7 +476,8 @@ class ViewTest_ajax_change(TestCase):
 #			response = self.client.get( strHref )
 
 			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-			response = self.client.post( strHref, dictValuesFormat )
+#			response = self.client.post( strHref, dictValuesFormat )
+			response = self.client.post( strHref, dictNewValues )
 
 
 			self.assertEqual( response.status_code, 200 )

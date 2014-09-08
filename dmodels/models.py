@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from django.db import models
 from django.conf import settings
+
 import yaml
 import os
 
@@ -48,7 +51,11 @@ for (table_name, table_def) in dictTableDef.iteritems():
  		elif field_type == 'int':
  			dictForClassX[field_id] = models.IntegerField( field_title )
  		elif field_type == 'date':
- 			dictForClassX[field_id] = models.DateField( field_title )
+# 			dictForClassX[field_id] = models.DateField( field_title )
+			_field_id = "_" + field_id
+ 			dictForClassX[_field_id] = models.DateField( field_title, db_column=field_id )
+ 			dictForClassX[field_id] = property( lambda self: getattr( self, _field_id ).strftime( '%m/%d/%Y' ) , 
+ 				lambda self, newv: setattr( self, _field_id, datetime.strptime( newv, '%m/%d/%Y') ) )
  		else:
 	 		flagAdd = False
  			pass

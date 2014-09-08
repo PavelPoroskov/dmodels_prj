@@ -42,9 +42,9 @@ def ajax_get_list(request, model_name):
 #			new_row[field['id']] = row[field['id']]
 			field_id = field['id']
 			value = getattr( row, field_id )
-			if field['type'] == 'date':
-#				value = value.isoformat()
-				value = value.strftime( '%m/%d/%Y' )
+#			if field['type'] == 'date':
+##				value = value.isoformat()
+#				value = value.strftime( '%m/%d/%Y' )
 
 #			new_row[field_id] = value
 			new_row.append( value )
@@ -102,8 +102,8 @@ def ajax_change( request, model_name, row_id ):
 
 #	for (field, value) in request.GET.items(): # 2014.09.03
 	for (field, value) in request.POST.items():
-		if dictFilds[field]['type'] == 'date':
-			value = datetime.strptime( value, '%m/%d/%Y')
+#		if dictFilds[field]['type'] == 'date':
+#			value = datetime.strptime( value, '%m/%d/%Y')
 		setattr( obj, field, value )
 
 	obj.save()
@@ -119,8 +119,8 @@ def ajax_add( request, model_name ):
 	dictValues = {};
 #	for (field, value) in request.GET.items(): # 2014.09.03
 	for (field, value) in request.POST.items(): 
-		if dictFilds[field]['type'] == 'date':
-			value = datetime.strptime( value, '%m/%d/%Y')
+#		if dictFilds[field]['type'] == 'date':
+#			value = datetime.strptime( value, '%m/%d/%Y')
 		dictValues[field] = value;
 
 	obj = dictModelClasses[model_name]( **dictValues )
@@ -134,9 +134,9 @@ def ajax_add( request, model_name ):
 #			new_row[field['id']] = row[field['id']]
 		field_id = field['id']
 		value = getattr( obj, field_id )
-		if field['type'] == 'date':
-#			value = value.isoformat()
-			value = value.strftime( '%m/%d/%Y' )
+#		if field['type'] == 'date':
+##			value = value.isoformat()
+#			value = value.strftime( '%m/%d/%Y' )
 
 #		new_row[field_id] = value
 		new_row.append( value )
