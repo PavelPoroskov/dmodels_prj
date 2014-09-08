@@ -1,0 +1,27 @@
+#left_content {
+	float: left;
+	width: 20%;
+}
+
+#right_content {
+	float: right;
+	width: 80%;
+}
+
+table {
+	border: 1px solid gray;
+}
+
+th, td {
+	padding: 3px; 
+    border: 1px solid gray; 
+}
+
+td.char, td.int, td.date {
+	width:250;
+}
+
+.error_field {
+	margin: 2px;
+	border: 2px solid red;
+}
