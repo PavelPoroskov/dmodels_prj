@@ -196,7 +196,8 @@ function drawTableRows( elTBody, _rows, _fields ) {
 			elTD.dataset['field'] = f;
 
 			if (_fields[f].id != 'id') {
-				elTD.className = _fields[f].type;
+//				elTD.className = _fields[f].type;
+				elTD.className = 'Cell';
 			};
 
 			elTR.appendChild(elTD);	
@@ -246,7 +247,7 @@ function drawFormAddNew(_data) {
 		elIn.setAttribute("type", "text");
 		elIn.name = fields[f]['id'];
 //		elIn.setAttribute("name", "fields[i].id");
-		elIn.className = fields[f]['type'];
+//		elIn.className = fields[f]['type']; //2014.09.08
 		elIn.dataset['title'] = fields[f]['title'];
 		elIn.dataset['type'] = fields[f]['type'];
 

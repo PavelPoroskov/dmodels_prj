@@ -35,7 +35,8 @@
 	<fieldset id="RightFieldSet">
 		...
 	</fieldset>
-	<input type='button' id='AddNewButton'>
+	<input type='reset'>
+	<input type='submit'>
 	</form>
 </div>	
 -->
@@ -61,7 +62,8 @@ function editCell_Begin( _src_td ) {
 	var elIn = document.createElement("INPUT");
 	elIn.setAttribute("type", "text");
 	elIn.value = strVal;
-	elIn.className = _src_td.className;
+//	elIn.className = _src_td.className; // 2014.09.08
+	elIn.className = 'CellInput'; // 2014.09.08
 
 	var elTR = _src_td.parentNode;
 	elTR.replaceChild( elIn, _src_td );
@@ -76,7 +78,12 @@ function editCell_Begin( _src_td ) {
 
 
 	// datepicker for cell
-	if (_src_td.className == 'date') {
+// 2014.09.08
+//	if (_src_td.className == 'date') {
+	var fields = GLOBAL_STATE['fields'];
+	var i_field = _src_td.dataset['field'];
+
+	if (fields[i_field]['type'] == 'date') {
 //		var prevDate = GLOBAL_STATE.current_input.value;
 		$(function() {
 			$( GLOBAL_STATE.current_input ).datepicker( {
@@ -102,7 +109,7 @@ function editCell_Begin( _src_td ) {
 };
 
 function editCell_TrySaveFinish( ) {
-	console.log( "editCell_TrySaveFinish in " );
+//	console.log( "editCell_TrySaveFinish in " );
 
 	if (!GLOBAL_STATE.isEditCell) {
 		return;
@@ -127,7 +134,10 @@ function editCell_TrySaveFinish( ) {
 
 	var field_name = field_def.id;
 	var field_title = field_def.title;
-	var field_type = src_td.className;
+
+//	var field_type = src_td.className;
+	var field_type = field_def.type;
+
 	var field_value = elIn.value;
 
 //	var row_id = elTR.firstChild.innerHTML;
@@ -295,7 +305,8 @@ $( "#left_content" ).on( "click", "a", function( _event ) {
 	load_RightContent( model );
 });
 
-$( "#right_content" ).on( "click", "td.int, td.char, td.date", function( _event ) {
+//$( "#right_content" ).on( "click", "td.int, td.char, td.date", function( _event ) {
+$( "#right_content" ).on( "click", ".Cell", function( _event ) {
 
 	_event.preventDefault();
 	var el_td = _event.target || _event.scrElement;
@@ -304,7 +315,8 @@ $( "#right_content" ).on( "click", "td.int, td.char, td.date", function( _event 
 //	console.log(el_td);
 	editCell_Begin( el_td );
 });
-$( "#right_content" ).on( "blur", "tr input.int, tr input.char, tr input.date", function( _event ) {
+//$( "#right_content" ).on( "blur", "tr input.int, tr input.char, tr input.date", function( _event ) {
+$( "#right_content" ).on( "blur", ".CellInput", function( _event ) {
 
 	_event.preventDefault();
 
@@ -313,7 +325,7 @@ $( "#right_content" ).on( "blur", "tr input.int, tr input.char, tr input.date", 
 //	};
 	editCell_TrySaveFinish();
 });
-$( "#right_content" ).on( "keydown", "tr input.int, tr input.char, tr input.date", function( _event ) {
+$( "#right_content" ).on( "keydown", ".CellInput", function( _event ) {
 
 	if (_event.keyCode == 27) { // ESC
 		editCell_Cancel();

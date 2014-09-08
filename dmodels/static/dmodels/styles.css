@@ -17,7 +17,8 @@ th, td {
     border: 1px solid gray; 
 }
 
-td.char, td.int, td.date {
+/* td.char, td.int, td.date { */
+td.Cell {
 	width:250;
 }
 
