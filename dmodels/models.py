@@ -1,10 +1,12 @@
+import os
+import sys
 from datetime import datetime
 
 from django.db import models
 from django.conf import settings
 
 import yaml
-import os
+
 
 dictModelClasses = {}
 dictModelStructure = {}
@@ -92,9 +94,11 @@ for (table_name, table_def) in dictTableDef.iteritems():
  	for dictOneField in table_def['fields']:
  		if dictOneField['type'] == 'char':
 			dictForClassX['__unicode__'] = fn__unicode__( dictOneField['id'] )
+			break
 
 
 	dictModelClasses[table_name] = type( table_name, (models.Model,), dictForClassX )
+	setattr( sys.modules[__name__], table_name, dictModelClasses[table_name] )
 
 	dictModelStructure[table_name] = { 
 #		'table_name': table_name,

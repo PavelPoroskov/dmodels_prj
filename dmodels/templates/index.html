@@ -159,8 +159,13 @@ function editCell_TrySaveFinish( ) {
 	if ( isValidAndMarkError(values) ) {
 
 		var data = {};
+		var val;
 		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			data[ values[v]['field'] ] = values[v]['value'];
+			val = values[v]['value'];
+			if (values[v]['type'] == 'int') {
+				val = parseInt( val, 10 );
+			};
+			data[ values[v]['field'] ] = val;
 		};
 
 		$.ajax({
@@ -264,10 +269,17 @@ function add_NewRow() {
 //	if ( isValid( values ) ) {
 	if ( isValidAndMarkError( values ) ) {
 
+//		console.log(values);
 		var data = {};
+		var val;
 		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			data[ values[v]['field'] ] = values[v]['value'];
+			val = values[v]['value'];
+			if (values[v]['type'] == 'int') {
+				val = parseInt( val, 10 );
+			};
+			data[ values[v]['field'] ] = val;
 		};
+//		console.log(data);
 
 		$.ajax({
 			url: 'ajax_add/' + GLOBAL_STATE['model'] + '/', 
