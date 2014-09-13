@@ -159,13 +159,14 @@ function editCell_TrySaveFinish( ) {
 	if ( isValidAndMarkError(values) ) {
 
 		var data = {};
-		var val;
+//		var val;
 		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			val = values[v]['value'];
-			if (values[v]['type'] == 'int') {
-				val = parseInt( val, 10 );
-			};
-			data[ values[v]['field'] ] = val;
+//			val = values[v]['value'];
+//			if (values[v]['type'] == 'int') {
+//				val = parseInt( val, 10 );
+//			};
+//			data[ values[v]['field'] ] = val;
+			data[ values[v]['field'] ] = values[v]['value'];
 		};
 
 		$.ajax({
@@ -271,13 +272,14 @@ function add_NewRow() {
 
 //		console.log(values);
 		var data = {};
-		var val;
+//		var val;
 		for (var v=0, v_length=values.length; v < v_length; v++ ) {
-			val = values[v]['value'];
-			if (values[v]['type'] == 'int') {
-				val = parseInt( val, 10 );
-			};
-			data[ values[v]['field'] ] = val;
+//			val = values[v]['value'];
+//			if (values[v]['type'] == 'int') {
+//				val = parseInt( val, 10 );
+//			};
+//			data[ values[v]['field'] ] = val;
+			data[ values[v]['field'] ] = values[v]['value'];
 		};
 //		console.log(data);
 
