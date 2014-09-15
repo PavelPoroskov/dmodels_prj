@@ -8,7 +8,6 @@ from django.conf import settings
 import yaml
 
 
-dictModelClasses = {}
 dictModelStructure = {}
 
 str__module__ = os.path.split( os.path.dirname(__file__) )[-1]
@@ -18,30 +17,20 @@ file_path = settings.DMODELS_SCHEME_YAMLFILE
 stream = file( file_path, 'r' )
 dictTableDef = yaml.load(stream)
 
+def get_fnUnicode( inFields ):
+	fn__unicode__ = lambda _field_id: (
+	    lambda _self: getattr( _self, _field_id )
+	)
+ 	for dictOneField in inFields:
+ 		if dictOneField['type'] == 'char':
+			return fn__unicode__( dictOneField['id'] )
 
-#class TestModel(models.Model):
-#	test_field = models.IntegerField( )
-#
-#	class Meta:
-#		verbose_name_plural = 'tra-ta-ta'
 
 for (table_name, table_def) in dictTableDef.iteritems():
 
 	dictForClassX = dict()
 
 	listFields = []
-	listFields.append( { 
-		'id' : 'id',
-		'title' : 'id',
-		'type' : 'int',
-	 } )
-	dictFilds = {}
-	i_field = 0
-	dictFilds['id'] = { 
-		'title' : 'id',
-		'type' : int,
-		'i_field': i_field,
-	}
  	for dictOneField in table_def['fields']:
  		field_id = dictOneField['id'];
  		field_title = dictOneField['title'];
@@ -63,19 +52,11 @@ for (table_name, table_def) in dictTableDef.iteritems():
  			pass
 
  		if flagAdd:
- 			i_field = i_field + 1
-
  			listFields.append( { 
-# 				'id' : field_title,
  				'id' : field_id,
  				'title' : field_title,
  				'type' : field_type,
  			 } )
- 			dictFilds[field_id] = { 
- 				'title' : field_title,
- 				'type' : field_type,
- 				'i_field': i_field,
- 			}
  		
 	table_title = table_def['title']
 	dictMeta = {
@@ -83,22 +64,20 @@ for (table_name, table_def) in dictTableDef.iteritems():
 		'verbose_name': table_title,			
 		'verbose_name_plural': table_title,			
 	}
+
 	dictForClassX['Meta'] = type( 'Meta', (), dictMeta )
- 
 	dictForClassX['__module__'] = str__module__
+	dictForClassX['__unicode__'] = get_fnUnicode( table_def['fields'] )
 
 
-	fn__unicode__ = lambda _field_id: (
-	    lambda _self: getattr( _self, _field_id )
-	)
- 	for dictOneField in table_def['fields']:
- 		if dictOneField['type'] == 'char':
-			dictForClassX['__unicode__'] = fn__unicode__( dictOneField['id'] )
-			break
+	setattr( sys.modules[__name__], table_name, type( table_name, (models.Model,), dictForClassX) )
 
-
-	dictModelClasses[table_name] = type( table_name, (models.Model,), dictForClassX )
-	setattr( sys.modules[__name__], table_name, dictModelClasses[table_name] )
+	listFields.insert( 0, { 
+		'id' : 'id',
+		'title' : 'id',
+		'type' : 'int',
+	 } )
+	dictFilds = { f['id']: { 'title': f['title'], 'type': f['type'], 'i_field': i } for (i, f) in enumerate(listFields) }
 
 	dictModelStructure[table_name] = { 
 #		'table_name': table_name,
