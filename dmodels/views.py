@@ -5,7 +5,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 
 
 from dmodels import models
-from dmodels import engine
+from dmodels import readmodels
+from dmodels import serialize
 
 
 @ensure_csrf_cookie
@@ -13,7 +14,7 @@ def index(request):
 	list_Models = [{ 
 		'table_name': dictModelInfo['table_name'], 
 		'table_title': dictModelInfo['table_title'] 
-		} for dictModelInfo in engine.getModels(models) ]
+		} for dictModelInfo in readmodels.getModels(models) ]
 	
 	list_Models = sorted( list_Models, key=lambda obj: obj['table_title'] )
 
@@ -26,7 +27,7 @@ def ajax_get_list(request, model_name):
 	Model = getattr( models, model_name )
 	list_rows = Model.objects.all()
 
-	res_str = engine.serialize( list_rows, Model )
+	res_str = serialize.serialize( list_rows, Model )
 	
 	return HttpResponse(res_str)
 
@@ -35,7 +36,7 @@ def ajax_get_list(request, model_name):
 def ajax_change( request, model_name, row_id ):
 
 	Model = getattr( models, model_name )
-	dictValues = engine.deserialize( request.POST, Model )
+	dictValues = serialize.deserialize( request.POST, Model )
 
 	obj = Model.objects.get( **{'id': row_id} )
 	for (field, value) in dictValues.items():
@@ -52,13 +53,13 @@ def ajax_change( request, model_name, row_id ):
 def ajax_add( request, model_name ):
 
 	Model = getattr( models, model_name )
-	dictValues = engine.deserialize( request.POST, Model )
+	dictValues = serialize.deserialize( request.POST, Model )
 
 	obj = Model( **dictValues )
 #... ??? validation
 	obj.save()
 
-	res_str = engine.serialize( obj, Model )
+	res_str = serialize.serialize( obj, Model )
 
 	return HttpResponse(res_str)
 

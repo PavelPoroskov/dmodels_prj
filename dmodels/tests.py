@@ -7,7 +7,8 @@ from django.core.urlresolvers import reverse
 
 
 from dmodels import models
-from dmodels import engine
+from dmodels import fieldrules
+from dmodels import readmodels
 
 def create_dictTestRowValues(_Model,from_client=False): 
 	dictTypeTestValues = {
@@ -21,7 +22,7 @@ def create_dictTestRowValues(_Model,from_client=False):
 	if from_client:
 		dictTypeTestValues['date'] = dictTypeTestValues['date'].strftime( '%m/%d/%Y' )
 
-	listFields = engine.getFields(_Model)
+	listFields = readmodels.getFields(_Model)
 
 	dictValues = {}
 	for field_def in listFields:
@@ -43,7 +44,7 @@ def create_dictTestRowValuesNew(_Model,from_client=False):
 	if from_client:
 		dictTypeTestValues['date'] = dictTypeTestValues['date'].strftime( '%m/%d/%Y' )
 
-	listFields = engine.getFields(_Model)
+	listFields = readmodels.getFields(_Model)
 
 	dictValues = {}
 	for field_def in listFields:
@@ -57,7 +58,7 @@ def create_dictTestRowValuesNew(_Model,from_client=False):
 class AllModels(TestCase):
 
 	def test_not_empty(self):
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		self.assertEqual( 0 < len(listModels), True )
 
 
@@ -88,7 +89,7 @@ class OneModel(TestCase):
 			self.assertEqual( isError, False )        
 
 
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		for model_info in listModels:
 			one_model_test( model_info )
 
@@ -97,7 +98,7 @@ class ViewTest_Index(TestCase):
 
 	def test_get(self):
 
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		response = self.client.get(reverse('index'))
 
 		self.assertEqual( response.status_code, 200 )
@@ -115,7 +116,7 @@ class ViewTest_ajax_get_list(TestCase):
 			dictTestValues = create_dictTestRowValues( Model )
 
 			#prepare
-			listFieldInfo = engine.getFields(Model)
+			listFieldInfo = readmodels.getFields(Model)
 			dictFields = { finfo['id']: {'iCol': iCol, 'type': finfo['type'] } 
 				for iCol, finfo in enumerate(listFieldInfo) }
 
@@ -154,7 +155,7 @@ class ViewTest_ajax_get_list(TestCase):
 			self.assertEqual( isError, False )        
 
 
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		for model_info in listModels:
 			one_model_test( model_info )
 
@@ -166,7 +167,7 @@ class ViewTest_ajax_add(TestCase):
 			Model = _ModelInfo['model']
 			model_name = _ModelInfo['table_name']
 
-			listFieldInfo = engine.getFields(Model)
+			listFieldInfo = readmodels.getFields(Model)
 			dictFields = { finfo['id']: {'iCol': iCol, 'type': finfo['type'] } 
 				for iCol, finfo in enumerate(listFieldInfo) }
 
@@ -225,7 +226,7 @@ class ViewTest_ajax_add(TestCase):
 
 
 
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		for model_info in listModels:
 			one_model_test( model_info )
 
@@ -280,6 +281,6 @@ class ViewTest_ajax_change(TestCase):
 
 
 
-		listModels = engine.getModels(models)
+		listModels = readmodels.getModels(models)
 		for model_info in listModels:
 			one_model_test( model_info )
