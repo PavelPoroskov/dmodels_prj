@@ -7,20 +7,21 @@ from django.core.urlresolvers import reverse
 
 
 from dmodels import models
-from dmodels.models import dictModelStructure
+from dmodels import engine
 
-
-
-def create_dictTestRowValues(_model_name): 
+def create_dictTestRowValues(_Model,from_client=False): 
 	dictTypeTestValues = {
 		'int': 117,
 		'char': "test string",
 #		'date': datetime.today()
-#		'date': datetime.today().date()
-		'date': "09/01/2014"
+		'date': datetime.today().date()
+#		'date': "09/01/2014"
 	}
 
-	listFields = dictModelStructure[ _model_name ]['fields'] 
+	if from_client:
+		dictTypeTestValues['date'] = dictTypeTestValues['date'].strftime( '%m/%d/%Y' )
+
+	listFields = engine.getFields(_Model)
 
 	dictValues = {}
 	for field_def in listFields:
@@ -30,16 +31,19 @@ def create_dictTestRowValues(_model_name):
 
 	return dictValues
 
-def create_dictTestRowValuesNew(_model_name): 
+def create_dictTestRowValuesNew(_Model,from_client=False): 
 	dictTypeTestValues = {
 		'int': 203,
 		'char': "test string new",
 #		'date': datetime.today()
-#		'date': datetime.today().date() + timedelta(10)
-		'date': "09/11/2014"
+		'date': datetime.today().date() + timedelta(10)
+#		'date': "09/11/2014"
 	}
 
-	listFields = dictModelStructure[ _model_name ]['fields'] 
+	if from_client:
+		dictTypeTestValues['date'] = dictTypeTestValues['date'].strftime( '%m/%d/%Y' )
+
+	listFields = engine.getFields(_Model)
 
 	dictValues = {}
 	for field_def in listFields:
@@ -49,77 +53,24 @@ def create_dictTestRowValuesNew(_model_name):
 
 	return dictValues
 
-#def create_db_row( _model_name ):
-#
-#	dictValues = create_dictTestRowValues( model_name )
-#	Model = dictModelClasses[ _model_name ]
-#
-#	obj = Model( **dictValues )
-#	obj.save()
 
-#?
 class AllModels(TestCase):
 
 	def test_not_empty(self):
-#		self.assertEqual( 0 < len(dictModelClasses), True )
-		self.assertEqual( 0 < len(dictModelStructure), True )
+		listModels = engine.getModels(models)
+		self.assertEqual( 0 < len(listModels), True )
 
 
 class OneModel(TestCase):
 
-	def test_create_instance(self):
-		def one_model_test( model_name ):
-			dictValues = create_dictTestRowValues( model_name )
-#			Model = dictModelClasses[ model_name ]
-			Model = getattr( models, model_name )
-
-			isCtreated = False
-			try:
-				obj = Model( **dictValues )
-				isCtreated = True
-			except:
-				print ('Error, create model ' + model_name  )
-
-
-			self.assertEqual( isCtreated, True )
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
-
-
-	def test_create_instance_fields(self):
-		def one_model_test( model_name ):
-			isError = False
-
-			dictValues = create_dictTestRowValues( model_name );
-#			Model = dictModelClasses[ model_name ]
-			Model = getattr( models, model_name )
-
-			obj = Model( **dictValues )
-
-
-			for (field_name, test_value) in dictValues.items():
-				obj_value = getattr( obj, field_name )
-				if obj_value != test_value:
-					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
-					isError = True
-
-			self.assertEqual( isError, False )        
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
-
-
 	def test_save_row(self):
-		def one_model_test( model_name ):
+		def one_model_test( _ModelInfo ):
+			Model = _ModelInfo['model']
+			model_name = _ModelInfo['table_name']
 
-			dictValues = create_dictTestRowValues( model_name );
-#			Model = dictModelClasses[ model_name ]
-			Model = getattr( models, model_name )
+			dictTestValues = create_dictTestRowValues( Model )
 
-			obj = Model( **dictValues )
+			obj = Model( **dictTestValues )
 			obj.save()
 
 			list_obj = Model.objects.all()
@@ -128,7 +79,7 @@ class OneModel(TestCase):
 			obj = list_obj[0]
 
 			isError = False
-			for (field_name, test_value) in dictValues.items():
+			for (field_name, test_value) in dictTestValues.items():
 				obj_value = getattr( obj, field_name )
 				if obj_value != test_value:
 					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
@@ -136,68 +87,51 @@ class OneModel(TestCase):
 
 			self.assertEqual( isError, False )        
 
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
+
+		listModels = engine.getModels(models)
+		for model_info in listModels:
+			one_model_test( model_info )
 
 
 class ViewTest_Index(TestCase):
 
 	def test_get(self):
-		def one_model_test( model_name ):
-			response = self.client.get(reverse('index'))
 
-	#		print(response)
+		listModels = engine.getModels(models)
+		response = self.client.get(reverse('index'))
 
-			self.assertEqual( response.status_code, 200 )
-	#		self.assertContains(response, "No polls are available.")
-			self.assertEqual( len(response.context['dmodels_list']), len(dictModelStructure) )
+		self.assertEqual( response.status_code, 200 )
+		self.assertEqual( len(response.context['dmodels_list']), len(listModels) )
 
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
 
 
 class ViewTest_ajax_get_list(TestCase):
 
-	def test_get(self):
-		def one_model_test( model_name ):
+	def test_ajax_get_list(self):
+		def one_model_test( _ModelInfo ):
+			Model = _ModelInfo['model']
+			model_name = _ModelInfo['table_name']
 
-			listFields = dictModelStructure[ model_name ]['fields'] 
+			dictTestValues = create_dictTestRowValues( Model )
 
-	#		response = self.client.get( reverse('dmodels.views.ajax_get_list', args=(model_name,) ) )
+			#prepare
+			listFieldInfo = engine.getFields(Model)
+			dictFields = { finfo['id']: {'iCol': iCol, 'type': finfo['type'] } 
+				for iCol, finfo in enumerate(listFieldInfo) }
+
+			obj = Model( **dictTestValues )
+			obj.save()
+
+			#action
 			response = self.client.get( reverse('ajax_get_list', args=(model_name,) ) )
-
-	#		print(dir(response))
-	#		print(response.content)
 			obj_json = json.loads( response.content )
 
 			self.assertEqual( response.status_code, 200 )
 			self.assertEqual( isinstance( obj_json, dict ), True )
 
 			self.assertEqual( obj_json['model'], model_name )
-			self.assertEqual( obj_json['fields'], listFields )
+			self.assertEqual( obj_json['fields'], listFieldInfo )
 			self.assertEqual( isinstance( obj_json['data'], list ), True )
-			self.assertEqual( len( obj_json['data'] ), 0 )
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
-
-
-	def test_get_add_fields(self):
-		def one_model_test( model_name ):
-
-	#		create_db_row( model_name )
-			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
-			dictValues = create_dictTestRowValues( model_name )
-#			Model = dictModelClasses[ model_name ]
-			Model = getattr( models, model_name )
-
-			obj = Model( **dictValues )
-			obj.save()
-
-
-			response = self.client.get( reverse('ajax_get_list', args=(model_name,) ) )
-			obj_json = json.loads( response.content )
 
 			self.assertEqual( len( obj_json['data'] ), 1 )
 
@@ -206,94 +140,45 @@ class ViewTest_ajax_get_list(TestCase):
 			self.assertEqual( isinstance( row, list ), True )
 
 
+			dictTestValuesFromClient = create_dictTestRowValues( Model, from_client=True )
 
 			isError = False
-			for (field_name, test_value) in dictValues.items():
-				field_def = dictFields[field_name]
-				obj_value = row[ field_def['i_field'] ]
-
-#				if (field_def['type'] == 'date'):
-#					obj_value = datetime.strptime( obj_value, '%m/%d/%Y' ).date()
+			for (field_name, test_value) in dictTestValuesFromClient.items():
+				obj_value = row[ dictFields[field_name]['iCol'] ]
 
 				if obj_value != test_value:
-					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
+					print (' model (field): ' + model_name + '(' + field_name + ') ' 
+						+ str(obj_value) + ' != ' + str(test_value) )
 					isError = True
 
 			self.assertEqual( isError, False )        
 
 
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
+		listModels = engine.getModels(models)
+		for model_info in listModels:
+			one_model_test( model_info )
 
 
 class ViewTest_ajax_add(TestCase):
 
-	def test_add_db(self):
-		def one_model_test( model_name ):
+	def test_ajax_add(self):
+		def one_model_test( _ModelInfo ):
+			Model = _ModelInfo['model']
+			model_name = _ModelInfo['table_name']
 
-#			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
+			listFieldInfo = engine.getFields(Model)
+			dictFields = { finfo['id']: {'iCol': iCol, 'type': finfo['type'] } 
+				for iCol, finfo in enumerate(listFieldInfo) }
 
+			dictTestValues = create_dictTestRowValues( Model, from_client=False )
+			dictTestValuesFromClient = create_dictTestRowValues( Model, from_client=True )
 
-			dictValues = create_dictTestRowValues( model_name )
-
-#			dictValuesFormat = {}
-#			for (field_name, test_value) in dictValues.items():
-#				field_def = dictFields[field_name]
-
-#				new_value = test_value
-#				if field_def['type'] == 'date':
-#					new_value = test_value.strftime( '%m/%d/%Y' )
-#				dictValuesFormat[field_name] = new_value
-
-
-#			listParams = [''+field_name+'='+str(value) for (field_name, value ) in  dictValuesFormat.items()]
-#
-#			strHref = reverse('ajax_add', args=(model_name,) )
-#			strHref = strHref + '?' + '&'.join(listParams)
-#
-#	#		print(strHref)
-#			response = self.client.get( strHref )
-
-#			strHref = 'ajax_add/' + model_name 
-			strHref = reverse('ajax_add', args=(model_name,) )
-#			response = self.client.post( strHref, dictValuesFormat )
-			response = self.client.post( strHref, dictValues )
-
-
-#			Model = dictModelClasses[ model_name ]
-			Model = getattr( models, model_name )
-			list_obj = Model.objects.all()
-			self.assertEqual( len(list_obj), 1 )
-
-			obj = list_obj[0]
-			isError = False
-			for (field_name, test_value) in dictValues.items():
-	#			field_def = dictFields[field_name]
-
-				obj_value = getattr( obj, field_name )
-
-				if obj_value != test_value:
-					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
-					isError = True
-
-			self.assertEqual( isError, False )        
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
-
-
-	def test_add_response(self):
-		def one_model_test( model_name ):
-
-			dictFields = dictModelStructure[ model_name ]['dictFilds'] 
-
-
-			dictValues = create_dictTestRowValues( model_name )
 
 			strHref = reverse('ajax_add', args=(model_name,) )
-			response = self.client.post( strHref, dictValues )
+			response = self.client.post( strHref, dictTestValuesFromClient )
 
+
+			# responce to client
 			self.assertEqual( response.status_code, 200 )
 
 
@@ -305,42 +190,59 @@ class ViewTest_ajax_add(TestCase):
 			self.assertEqual( len(obj_json['data']), 1 )
 
 			row = obj_json['data'][0]
-			row_id = row[ dictFields['id']['i_field'] ]
+			row_id = row[ dictFields['id']['iCol'] ]
 			self.assertEqual( 0 < row_id , True )
 
 
-			isError = False
-			for (field_name, test_value) in dictValues.items():
-				field_def = dictFields[field_name]
-
-				obj_value = row[ field_def['i_field'] ]
-
-#				if (field_def['type'] == 'date'):
-#					test_value = datetime.strftime( test_value, '%m/%d/%Y' )
-#				if (field_def['type'] == 'int'):
-#					test_value = str(test_value)
+			isResponceError = False
+			for (field_name, test_value) in dictTestValuesFromClient.items():
+				obj_value = row[ dictFields[field_name]['iCol'] ]
 
 				if obj_value != test_value:
-					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
-					isError = True
+					print (' model (field): ' + model_name + '(' + field_name + ') ' 
+						+ str(obj_value) + ' != ' + str(test_value) )
+					isResponceError = True
 
-			self.assertEqual( isError, False )        
+			self.assertEqual( isResponceError, False )        
 
 
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
+			# save in db
+			list_obj = Model.objects.all()
+			self.assertEqual( len(list_obj), 1 )
+
+			obj = list_obj[0]
+			isSaveError = False
+			for (field_name, test_value) in dictTestValues.items():
+				obj_value = getattr( obj, field_name )
+
+				if obj_value != test_value:
+					print (' model (field): ' + model_name + '(' + field_name + ') ' 
+						+ str(obj_value) + ' != ' + str(test_value) )
+					isSaveError = True
+
+			self.assertEqual( isSaveError, False )        
+
+
+
+
+		listModels = engine.getModels(models)
+		for model_info in listModels:
+			one_model_test( model_info )
 
 
 class ViewTest_ajax_change(TestCase):
 
-	def test_change_db(self):
-		def one_model_test( model_name ):
+	def test_ajax_change(self):
+		def one_model_test( _ModelInfo ):
+			Model = _ModelInfo['model']
+			model_name = _ModelInfo['table_name']
 
-			Model = getattr( models, model_name )
+			#prepare
+			dictTestValues =	 create_dictTestRowValues( Model )
+			dictTestValues_NewFromClient = create_dictTestRowValuesNew( Model, from_client=True )
+			dictTestValues_New = create_dictTestRowValuesNew( Model )
 
-
-			dictValues = create_dictTestRowValues( model_name )
-			obj = Model( **dictValues )
+			obj = Model( **dictTestValues )
 			obj.save()
 
 			list_obj = Model.objects.all()
@@ -351,63 +253,33 @@ class ViewTest_ajax_change(TestCase):
 
 
 			#action
-			dictNewValues = create_dictTestRowValuesNew( model_name );
 
 			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-			response = self.client.post( strHref, dictNewValues )
+			response = self.client.post( strHref, dictTestValues_NewFromClient )
 
+			#responce to client
+			self.assertEqual( response.status_code, 200 )
 
-			#result
+			#change in db
 			list_obj = Model.objects.all()
 			self.assertEqual( len(list_obj), 1 )
 
 			obj = Model.objects.get( **{'id': _row_id} )
 
-			isError = False
-			for (field_name, test_value) in dictNewValues.items():
+			isSaveError = False
+			for (field_name, test_value) in dictTestValues_New.items():
 
 				obj_value = getattr( obj, field_name )
 
 				if obj_value != test_value:
-					print (' model (field): ' + model_name + '(' + field_name + ') ' + str(obj_value) + ' != ' + str(test_value) )
-					isError = True
+					print (' model (field): ' + model_name + '(' + field_name + ') ' 
+						+ str(obj_value) + ' != ' + str(test_value) )
+					isSaveError = True
 
-			self.assertEqual( isError, False )        
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
+			self.assertEqual( isSaveError, False )        
 
 
-	def test_change_response(self):
-		def one_model_test( model_name ):
 
-			# before: create row, _row_id
-			Model = getattr( models, model_name )
-
-
-			dictValues = create_dictTestRowValues( model_name )
-			obj = Model( **dictValues )
-			obj.save()
-
-			list_obj = Model.objects.all()
-
-			self.assertEqual( len(list_obj), 1 )        
-			obj = list_obj[0]
-			_row_id = getattr( obj, 'id')
-
-
-			#action
-			dictNewValues = create_dictTestRowValuesNew( model_name );
-
-			strHref = reverse('ajax_change', args=(model_name, _row_id) )
-#			response = self.client.post( strHref, dictValuesFormat )
-			response = self.client.post( strHref, dictNewValues )
-
-
-			self.assertEqual( response.status_code, 200 )
-
-
-		for model_name in dictModelStructure:
-			one_model_test( model_name )
-
+		listModels = engine.getModels(models)
+		for model_info in listModels:
+			one_model_test( model_info )

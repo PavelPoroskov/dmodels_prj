@@ -2,4 +2,4 @@
 *.sqlite
 *.sqlite3
 migrations/
-
+*.bat

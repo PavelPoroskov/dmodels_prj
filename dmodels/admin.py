@@ -1,14 +1,9 @@
+
 from django.contrib import admin
-
-# Register your models here.
-
-#from dmodels.models import dictModelClasses
-
-#for v in dictModelClasses.values():
-#	admin.site.register( v )
+from django.db.models import Model
 
 from dmodels import models
-from dmodels.models import dictModelStructure
+from dmodels import engine
 
-for model_name in dictModelStructure.keys():
-	admin.site.register( getattr( models, model_name ) )
+for dictModelInfo in engine.getModels(models):
+	admin.site.register( dictModelInfo['model'] )		
