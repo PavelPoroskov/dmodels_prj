@@ -269,6 +269,7 @@ function add_NewRow() {
 
 //	if ( isValid( values ) ) {
 	if ( isValidAndMarkError( values ) ) {
+//	if ( 1===1 ) {
 
 //		console.log(values);
 		var data = {};
@@ -295,6 +296,17 @@ function add_NewRow() {
 				};
 				form.reset();
 				drawTableRows( $("#tbody_id")[0], _jsondata['data'], GLOBAL_STATE['fields'] );
+/*				
+				if (_jsondata['result'] == 'Ok') {
+					form.reset();
+					drawTableRows( $("#tbody_id")[0], _jsondata['data'], GLOBAL_STATE['fields'] );
+				}else{
+					var errors = _jsondata['errors'];
+					for (var field in  errors) {
+						console.log( "" + field + ", " + errors[field] );
+					}
+				};
+*/				
 			},
 			error: function( xhr, status, errorThrown ) {
 //				console.log('add_NewRow error');

@@ -1,5 +1,6 @@
 import os
 import sys
+from operator import attrgetter
 
 import yaml
 
@@ -8,11 +9,13 @@ from django.db import models
 from dmodels import fieldrules
 
 
+
 def loadFromYaml( _yaml_file, _to_module__name__ ):
 
 	def get_fnUnicode( inFields ):
 		fn__unicode__ = lambda _field_id: (
 		    lambda _self: getattr( _self, _field_id )
+#		    attrgetter( _field_id )
 		)
 	 	for dictOneField in inFields:
 #	 		if dictOneField['type'] == 'char':
@@ -20,6 +23,7 @@ def loadFromYaml( _yaml_file, _to_module__name__ ):
 	 		if dictOneField['type'] in fieldrules.dictStrTypeToField:
 		 		if fieldrules.dictStrTypeToField[ dictOneField['type'] ]['Field'] == models.fields.CharField:
 					return fn__unicode__( dictOneField['id'] )
+#					return attrgetter( dictOneField['id'] )
 	
 
 	stream = file( _yaml_file, 'r' )

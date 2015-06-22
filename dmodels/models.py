@@ -1,6 +1,6 @@
 from django.conf import settings
 
-
+#from dmodels.fix import IntegerField
 from dmodels import loadmodels
 
 
